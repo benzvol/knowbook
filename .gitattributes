@@ -1,0 +1,18 @@
+# Normalize line endings: use LF in the repository for all text files.
+* text=auto eol=lf
+
+# Explicitly treat known binary assets as binary (never normalized).
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
+*.sqlite binary
+*.sqlite3 binary
+*.db binary
