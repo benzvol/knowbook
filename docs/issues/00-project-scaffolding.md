@@ -44,6 +44,7 @@ pnpm add -D drizzle-kit @nuxt/test-utils vitest @vue/test-utils happy-dom \
 ```
 
 > Notes
+>
 > - Icons are served through `@nuxt/icon` using the Phosphor (`ph`) collection;
 >   `@iconify-json/ph` bundles the icon set locally so no network fetch is
 >   needed at runtime. Use as `<Icon name="ph:rss" />`. (`@nuxt/icon` also
