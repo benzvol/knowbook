@@ -1,0 +1,21 @@
+RSS reader app, single user
+
+Manage = add, list, edit, remove
+
+Features:
+- Manage sources, group in categories/types and/or support tagging
+- Support pagination with standard and custom query params e.g. page, page size/limit
+- Manage subfeeds (subsources?) using custom query params
+-- Manage list of columns of a news-type source by a specified query param
+- Manage list of bookmarks, with filtering, automatic and custom (move by drag-and-drop) sorting
+- Compose and manage feeds from multiple sources
+- All of source, subsource and feed views:
+-- filtering
+-- automatic sorting (*no drag-and-drop*)
+-- search in title and description
+--- paginate source until found with configurable max number of pages to search
+- Support app-managed sources from config file (to pre-specify URL, pagination & other query params (e.g. source-specific item tags), list of columns, etc.)
+-- Prepare for later extension: content scraping and play with TTS
+-- Save a source and its settings as managed
+- Export and import sources, feeds, bookmarks, settings
+- Light (beige bg) and dark mode (dark brown bg) themes

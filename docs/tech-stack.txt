@@ -1,0 +1,1 @@
+pnpm (Node v24), Nuxt (Typescript, SSR), Vue, Pinia, Nuxt UI, Phosphor Icons, Drizzle, SQLite, Vitest + Nuxt Test Utils, ESLint, Prettier, Docker, Docker Compose

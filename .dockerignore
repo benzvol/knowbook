@@ -1,0 +1,30 @@
+# Build/dev outputs
+.output
+.data
+.nuxt
+.nitro
+.cache
+dist
+
+# Node dependencies (reinstalled inside the image)
+node_modules
+
+# Logs
+logs
+*.log
+
+# Local env files
+.env
+.env.*
+
+# SQLite database files
+*.sqlite
+*.sqlite3
+*.db
+
+# VCS & misc
+.git
+.gitignore
+.DS_Store
+.fleet
+.idea
