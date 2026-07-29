@@ -25,6 +25,7 @@
     "@pinia/nuxt": "^1.0.1",
     "better-sqlite3": "^13.0.1",
     "drizzle-orm": "^0.45.2",
+    "fast-xml-parser": "^5.10.1",
     "nuxt": "^4.5.1",
     "pinia": "^4.0.2",
     "vue": "^3.5.40",

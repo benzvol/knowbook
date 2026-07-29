@@ -1,4 +1,4 @@
-import { desc, eq } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import type { Item, NewItem } from '#shared/types'
 import { db, type DB } from '../client'
 import { items } from '../schema'
@@ -14,6 +14,18 @@ export function itemsForSource(sourceId: number, database: DB = db): Item[] {
 
 export function getItem(id: number, database: DB = db): Item | undefined {
   return database.select().from(items).where(eq(items.id, id)).get()
+}
+
+export function getItemBySourceGuid(
+  sourceId: number,
+  guid: string,
+  database: DB = db,
+): Item | undefined {
+  return database
+    .select()
+    .from(items)
+    .where(and(eq(items.sourceId, sourceId), eq(items.guid, guid)))
+    .get()
 }
 
 export function createItem(data: NewItem, database: DB = db): Item {
