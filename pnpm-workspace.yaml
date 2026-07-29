@@ -1,0 +1,8 @@
+allowBuilds:
+  # better-sqlite3 ships a prebuilt binary selected at runtime; compiling from
+  # source needs the VS "Desktop development with C++" workload, which isn't
+  # available here. Leave its build script off and use the prebuilt.
+  better-sqlite3: false
+  esbuild: true
+  unrs-resolver: true
+  vue-demi: true
