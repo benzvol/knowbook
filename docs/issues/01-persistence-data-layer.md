@@ -54,7 +54,7 @@ Notes:
 - Use integer epoch-millis (or `text` ISO) consistently for timestamps; pick one
   and document it.
 - JSON columns store structured config (pagination params, custom query params,
-  item tags) so the *managed-source / scraping / TTS* extension reserves space
+  item tags) so the _managed-source / scraping / TTS_ extension reserves space
   without a later migration, per the plan's config-first principle.
 - Define foreign keys with sensible `onDelete` (cascade for join tables and
   items→source; restrict/set-null where data loss would surprise the user).
@@ -79,9 +79,13 @@ rather than letting routes touch Drizzle directly — keeps issue 03+ simple:
 - Re-export the shared row types into `shared/types/` where the client will also
   need them (e.g. `Source`, `Item`, `Bookmark`), keeping server-only types out
   of the client bundle.
-- Basic query helpers used by later issues (e.g. `getSourceById`,
-  `listSources`) can be stubbed minimally here or deferred to their feature
-  issues — this issue only guarantees the layer and types exist.
+- Full typed CRUD repositories for every entity now (one module per aggregate
+  under `server/db/repositories/`, plus a barrel `index.ts`), so later feature
+  issues only wire API + UI. Includes membership helpers (source↔tag,
+  feed↔source), `upsertItem` by `(sourceId, guid)` for issue 02 caching,
+  `reorderBookmarks` for issue 08, and `getSetting`/`setSetting`/`getAllSettings`.
+- Repository functions are synchronous (better-sqlite3 is a sync driver) and
+  take a trailing `database: DB = db` param so tests can inject an in-memory DB.
 
 ### 5. Seeding (dev convenience)
 

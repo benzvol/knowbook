@@ -8,20 +8,20 @@ of intent per issue; acceptance criteria and detail live in the issue files.
 Ordering reflects dependencies: foundation first, then domain features, then
 platform concerns.
 
-| #   | Issue                              | Depends on |
-| --- | ---------------------------------- | ---------- |
-| 00  | Project scaffolding & tooling      | —          |
-| 01  | Persistence & data layer           | 00         |
-| 02  | Feed fetch & parse engine          | 01         |
-| 03  | Source management                  | 01, 02     |
-| 04  | Categories, types & tagging        | 03         |
-| 05  | Subfeeds & columns                 | 03         |
-| 06  | Composed feeds                     | 03, 05     |
-| 07  | Shared content views               | 02, 03     |
-| 08  | Bookmarks                          | 07         |
-| 09  | Managed sources from config        | 03         |
-| 10  | Export & import                    | 03, 06, 08 |
-| 11  | Settings & theming                 | 00         |
+| #   | Issue                         | Depends on |
+| --- | ----------------------------- | ---------- |
+| 00  | Project scaffolding & tooling | —          |
+| 01  | Persistence & data layer      | 00         |
+| 02  | Feed fetch & parse engine     | 01         |
+| 03  | Source management             | 01, 02     |
+| 04  | Categories, types & tagging   | 03         |
+| 05  | Subfeeds & columns            | 03         |
+| 06  | Composed feeds                | 03, 05     |
+| 07  | Shared content views          | 02, 03     |
+| 08  | Bookmarks                     | 07         |
+| 09  | Managed sources from config   | 03         |
+| 10  | Export & import               | 03, 06, 08 |
+| 11  | Settings & theming            | 00         |
 
 ---
 
@@ -42,7 +42,7 @@ and expose a typed data-access layer the server routes build on.
 
 Server-side fetching and parsing of RSS/Atom into a normalised `Item` shape,
 with a reusable pagination abstraction driving standard and custom query params.
-Includes item caching and the foundation for *search-until-found* paging.
+Includes item caching and the foundation for _search-until-found_ paging.
 
 ## 03 — Source management
 

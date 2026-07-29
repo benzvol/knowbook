@@ -16,7 +16,7 @@ and expanded into individual files under [`issues/`](./issues/).
 - **Compose feeds** aggregating items from multiple sources.
 - Consistent **content views** across sources, subfeeds and feeds: filtering,
   automatic sorting, full-text search over title & description, and
-  *search-until-found* pagination with a configurable page cap.
+  _search-until-found_ pagination with a configurable page cap.
 - **Bookmarks** with filtering plus automatic **and** manual (drag-and-drop)
   sorting.
 - **App-managed sources** defined in a config file (URL, pagination params,
@@ -27,23 +27,23 @@ and expanded into individual files under [`issues/`](./issues/).
 ## 2. Non-Goals (for now)
 
 - Multi-user, auth, sync across devices.
-- Content scraping and text-to-speech — only *prepared for* via config schema
+- Content scraping and text-to-speech — only _prepared for_ via config schema
   and service seams; not implemented.
 - Mobile-native apps (responsive web only).
 
 ## 3. Tech Stack
 
-| Concern            | Choice                                             |
-| ------------------ | -------------------------------------------------- |
-| Runtime / PM       | Node 24, pnpm                                       |
-| Framework          | Nuxt (TypeScript, SSR)                              |
-| UI                 | Vue + Nuxt UI                                        |
-| Icons              | Phosphor Icons via `@nuxt/icon` (`ph` collection)    |
-| State              | Pinia                                               |
-| Persistence        | SQLite via Drizzle ORM (+ drizzle-kit migrations)   |
-| Testing            | Vitest + Nuxt Test Utils                            |
-| Quality            | ESLint + Prettier                                   |
-| Packaging          | Docker + Docker Compose                             |
+| Concern      | Choice                                            |
+| ------------ | ------------------------------------------------- |
+| Runtime / PM | Node 24, pnpm                                     |
+| Framework    | Nuxt (TypeScript, SSR)                            |
+| UI           | Vue + Nuxt UI                                     |
+| Icons        | Phosphor Icons via `@nuxt/icon` (`ph` collection) |
+| State        | Pinia                                             |
+| Persistence  | SQLite via Drizzle ORM (+ drizzle-kit migrations) |
+| Testing      | Vitest + Nuxt Test Utils                          |
+| Quality      | ESLint + Prettier                                 |
+| Packaging    | Docker + Docker Compose                           |
 
 Server logic lives in Nuxt's Nitro `server/` layer (API routes, scheduled
 fetches, config loading); the browser talks only to our own API, never directly
@@ -83,13 +83,13 @@ to remote feeds (avoids CORS and keeps parsing server-side).
 - **Bookmark** — references an Item; carries manual `sortOrder` and tags.
 - **Setting** — key/value (theme, default page size, search cap, …).
 
-*App-managed* sources are seeded from a config file and reconciled on startup;
+_App-managed_ sources are seeded from a config file and reconciled on startup;
 users can also "save as managed" to promote an existing source.
 
 ## 5. Cross-Cutting Concerns
 
 - **Pagination engine**: a single abstraction maps standard + custom params onto
-  a source and iterates pages; reused by list views and *search-until-found*.
+  a source and iterates pages; reused by list views and _search-until-found_.
 - **Normalisation**: all fetched entries collapse into the `Item` shape so
   views, search and bookmarks are source-agnostic.
 - **Views layer**: filtering / sorting / search implemented once and shared by
