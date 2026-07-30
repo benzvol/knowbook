@@ -1,3 +1,15 @@
+---
+id: "00"
+title: Project scaffolding & tooling
+description: >-
+  Scaffold the Nuxt (TypeScript, SSR) app with the full tech stack, project
+  structure, tooling, and Docker setup so later issues land on a working
+  foundation.
+status: done
+dependencies: []
+affects: [app, server, tests, config, ci]
+---
+
 # 00 — Project scaffolding & tooling
 
 > Part of the [implementation plan](../00-plan.md). See the

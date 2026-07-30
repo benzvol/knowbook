@@ -1,3 +1,15 @@
+---
+id: "01"
+title: Persistence & data layer
+description: >-
+  Introduce SQLite + Drizzle with migrations, model the core domain schema,
+  and expose a typed data-access layer in the Nitro server layer that all
+  later API routes build on.
+status: done
+dependencies: ["00"]
+affects: [server, db, tests]
+---
+
 # 01 — Persistence & data layer
 
 > Part of the [implementation plan](../00-plan.md). See the

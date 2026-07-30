@@ -1,3 +1,15 @@
+---
+id: "03"
+title: Source management
+description: >-
+  Deliver full CRUD for sources across the Nitro API, a Pinia store, and Nuxt
+  UI, including pagination/query-param config and a refresh action that runs
+  the fetch engine.
+status: done
+dependencies: ["01", "02"]
+affects: [app, server, tests]
+---
+
 # 03 — Source management
 
 > Part of the [implementation plan](../00-plan.md). See the

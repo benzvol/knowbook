@@ -1,3 +1,15 @@
+---
+id: "02"
+title: Feed fetch & parse engine
+description: >-
+  Build the server-side engine that fetches, parses, paginates, and caches
+  RSS/Atom feed items into SQLite, laying the foundation for
+  search-until-found paging used by later views.
+status: done
+dependencies: ["01"]
+affects: [server, tests]
+---
+
 # 02 — Feed fetch & parse engine
 
 > Part of the [implementation plan](../00-plan.md). See the
