@@ -41,11 +41,15 @@ function updatePagination(patch: Partial<PaginationConfig>) {
 <template>
   <UCollapsible class="flex flex-col gap-3">
     <UButton
+      class="group -mx-2 w-fit"
       label="Pagination & query params"
       color="neutral"
-      variant="subtle"
-      trailing-icon="i-ph-caret-down"
-      block
+      variant="ghost"
+      trailing-icon="i-ph-caret-right"
+      :ui="{
+        trailingIcon:
+          'transition-transform duration-200 group-data-[state=open]:rotate-90',
+      }"
     />
 
     <template #content>
