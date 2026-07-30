@@ -30,3 +30,5 @@ logs
 *.sqlite
 *.sqlite3
 *.db
+*.sqlite-shm
+*.sqlite-wal
