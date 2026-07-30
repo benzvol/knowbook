@@ -1,15 +1,9 @@
-import type { NewItem } from '#shared/types'
+import type { NewItem, RefreshSummary } from '#shared/types'
 import { db, type DB } from '../db/client'
 import { getItemBySourceGuid, getSource, upsertItem } from '../db/repositories'
 import { pages, type PagesOptions } from './pagination'
 
-export interface RefreshSummary {
-  sourceId: number
-  seen: number
-  inserted: number
-  updated: number
-  pagesFetched: number
-}
+export type { RefreshSummary } from '#shared/types'
 
 export interface RefreshSourceOptions extends PagesOptions {
   database?: DB
