@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import type { Feed, FeedSource, NewFeed } from '#shared/types'
 import { db, type DB } from '../client'
 import { feedSources, feeds } from '../schema'

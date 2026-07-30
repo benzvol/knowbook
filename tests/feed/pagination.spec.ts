@@ -4,7 +4,7 @@ import { makeSource, RSS_FEED } from './fixtures'
 
 function fakeFetchImpl(bodyByPage: (string | null)[]): typeof fetch {
   let call = 0
-  return vi.fn(async (url: string | URL | Request) => {
+  return vi.fn(async (_url: string | URL | Request) => {
     const body = bodyByPage[call] ?? null
     call++
     return new Response(body ?? '', {
