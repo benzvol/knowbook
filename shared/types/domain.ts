@@ -34,3 +34,12 @@ export type SettingValue =
   | null
   | SettingValue[]
   | { [key: string]: SettingValue }
+
+/** Result of refreshing a source: how many items were seen/cached. */
+export interface RefreshSummary {
+  sourceId: number
+  seen: number
+  inserted: number
+  updated: number
+  pagesFetched: number
+}
