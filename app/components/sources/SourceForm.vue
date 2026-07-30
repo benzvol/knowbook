@@ -78,7 +78,7 @@ function onSubmit(event: FormSubmitEvent<SourceCreateInput>) {
       <UCheckbox v-model="state.managed" label="Managed source" />
     </UFormField>
 
-    <PaginationParamsEditor
+    <SourcesPaginationParamsEditor
       v-model:pagination="state.pagination"
       v-model:query-params="state.queryParams"
     />
