@@ -28,6 +28,6 @@ async function onSubmit(payload: SourceCreateInput) {
 <template>
   <div class="flex flex-col gap-4 max-w-lg">
     <h1 class="text-xl font-semibold">Add source</h1>
-    <SourceForm :submitting="submitting" @submit="onSubmit" />
+    <SourcesSourceForm :submitting="submitting" @submit="onSubmit" />
   </div>
 </template>

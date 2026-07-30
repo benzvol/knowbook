@@ -36,7 +36,7 @@ async function onSubmit(payload: SourceCreateInput) {
   <div class="flex flex-col gap-4 max-w-lg">
     <template v-if="source">
       <h1 class="text-xl font-semibold">Edit source</h1>
-      <SourceForm
+      <SourcesSourceForm
         :source="source"
         :submitting="submitting"
         @submit="onSubmit"
