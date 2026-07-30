@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray, notInArray } from 'drizzle-orm'
 import type { NewTag, Tag } from '#shared/types'
 import { db, type DB } from '../client'
 import { sourceTags, tags } from '../schema'
@@ -67,4 +67,73 @@ export function detachTag(
     .delete(sourceTags)
     .where(and(eq(sourceTags.sourceId, sourceId), eq(sourceTags.tagId, tagId)))
     .run()
+}
+
+// Hydration helper for lists of sources: one join instead of N `tagsForSource`
+// calls. Keyed by sourceId; sources with no tags are simply absent from the map.
+export function tagsForSources(
+  sourceIds: number[],
+  database: DB = db,
+): Map<number, Tag[]> {
+  const result = new Map<number, Tag[]>()
+  if (sourceIds.length === 0) return result
+
+  const rows = database
+    .select({
+      sourceId: sourceTags.sourceId,
+      id: tags.id,
+      name: tags.name,
+    })
+    .from(sourceTags)
+    .innerJoin(tags, eq(tags.id, sourceTags.tagId))
+    .where(inArray(sourceTags.sourceId, sourceIds))
+    .all()
+
+  for (const { sourceId, ...tag } of rows) {
+    const existing = result.get(sourceId)
+    if (existing) existing.push(tag)
+    else result.set(sourceId, [tag])
+  }
+  return result
+}
+
+// Looks up tags by id; used to validate a membership payload's tagIds before
+// touching source_tags, so unknown ids can be reported as a 400.
+export function findTagsByIds(ids: number[], database: DB = db): Tag[] {
+  if (ids.length === 0) return []
+  return database.select().from(tags).where(inArray(tags.id, ids)).all()
+}
+
+// Replaces a source's whole tag set from a `tagIds` array: detaches anything
+// not in the target set, attaches anything missing, in one transaction.
+export function setSourceTags(
+  sourceId: number,
+  tagIds: number[],
+  database: DB = db,
+): Tag[] {
+  const targetIds = [...new Set(tagIds)]
+
+  database.transaction((tx) => {
+    if (targetIds.length > 0) {
+      tx.delete(sourceTags)
+        .where(
+          and(
+            eq(sourceTags.sourceId, sourceId),
+            notInArray(sourceTags.tagId, targetIds),
+          ),
+        )
+        .run()
+    } else {
+      tx.delete(sourceTags).where(eq(sourceTags.sourceId, sourceId)).run()
+    }
+
+    if (targetIds.length > 0) {
+      tx.insert(sourceTags)
+        .values(targetIds.map((tagId) => ({ sourceId, tagId })))
+        .onConflictDoNothing()
+        .run()
+    }
+  })
+
+  return tagsForSource(sourceId, database)
 }
