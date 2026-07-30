@@ -4,7 +4,7 @@ title: Categories, types & tagging
 description: >-
   Let users manage categories and free-form tags, assign them to sources, and
   group or filter the source list by category, type and tag.
-status: todo
+status: done
 dependencies: ["03"]
 affects: [app, server, tests]
 ---
