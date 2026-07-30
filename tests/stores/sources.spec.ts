@@ -2,14 +2,14 @@
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Source } from '#shared/types'
+import type { SourceWithTags } from '#shared/types'
 
 const { fetchMock } = vi.hoisted(() => ({ fetchMock: vi.fn() }))
 mockNuxtImport('$fetch', () => fetchMock)
 
 const { useSourcesStore } = await import('~/stores/sources')
 
-function makeSource(overrides: Partial<Source> = {}): Source {
+function makeSource(overrides: Partial<SourceWithTags> = {}): SourceWithTags {
   return {
     id: 1,
     url: 'https://example.com/feed',
@@ -21,6 +21,7 @@ function makeSource(overrides: Partial<Source> = {}): Source {
     queryParams: null,
     createdAt: new Date(),
     updatedAt: new Date(),
+    tags: [],
     ...overrides,
   }
 }
@@ -119,5 +120,29 @@ describe('useSourcesStore', () => {
     const result = await store.refresh(1)
 
     expect(result).toEqual(summary)
+  })
+
+  it('setTags patches the tags on the matching source', async () => {
+    const tags = [{ id: 1, name: 'dev' }]
+    fetchMock.mockResolvedValue(tags)
+    const store = useSourcesStore()
+    store.sources = [makeSource({ id: 6 })]
+
+    const result = await store.setTags(6, [1])
+
+    expect(result).toEqual(tags)
+    expect(store.sources[0]!.tags).toEqual(tags)
+  })
+
+  it('setTags sets error on failure', async () => {
+    fetchMock.mockRejectedValue({ statusMessage: 'Unknown tag ids: 9' })
+    const store = useSourcesStore()
+    store.sources = [makeSource({ id: 6 })]
+
+    const result = await store.setTags(6, [9])
+
+    expect(result).toBeUndefined()
+    expect(store.error).toBe('Unknown tag ids: 9')
+    expect(store.sources[0]!.tags).toEqual([])
   })
 })
