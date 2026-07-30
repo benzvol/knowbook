@@ -13,3 +13,4 @@ server/db/migrations
 # Issue files use double-quoted YAML frontmatter for readability; prettier would
 # rewrite it to single quotes.
 docs/issues
+.tmp
