@@ -37,14 +37,15 @@ https://telex.hu/rss/archivum?filters={"superTagSiteSlugs":["g7"],"superTagSlugs
 `g7` is a value inside `filters`, not the value of a param — so "one param name,
 many values" has nowhere to put it. A subfeed's own `queryParams` bag handles it
 with no schema change: `{ filters: '{"superTagSiteSlugs":["g7"],…}' }` is a valid
-`Record<string, string>`, and `URLSearchParams.set` encodes it correctly. The
-paging params `oldal` / `perPage` are ordinary `pageParam` / `sizeParam` on the
-parent source. Issue 04b drops `columnParam`; displaying sibling subfeeds
-side-by-side is a **view** concern and belongs to issue 07.
+`Record<string, string>`, and `URLSearchParams.set` encodes it correctly. Issue 04b has dropped `columnParam`;
+displaying sibling subfeeds side-by-side is a **view** concern and belongs to
+issue 07. The paging params `oldal` / `perPage` are ordinary `pageParam` /
+`sizeParam` on the parent source.
 
-**Depends on:** 03 (source management), 04b (simplify classification) — 04b
-removes `columnParam` and `sources.type`, both of which this issue would
-otherwise have to reason about.
+**Depends on:** 03 (source management), 04b (simplify classification) — **both
+are done**. 04b removed `columnParam` and `sources.type`, so this issue lands on
+a schema where `subfeeds` is `(id, sourceId, name, queryParams, timestamps)` and
+`tags` are the only classification axis.
 
 ## Tasks
 
@@ -77,8 +78,9 @@ of the endpoint, and both the source and its subfeeds hit the same one.
 - **Items cache under the parent `sourceId`.** A subfeed is a different _view_ of
   the same feed, so the same entry legitimately arrives via both the source and
   its subfeeds; the existing `(sourceId, guid)` unique index
-  (`server/db/schema.ts:142`) then keeps it a single row and `upsertItem`'s
-  dedupe stays correct. Consequence: which subfeed an item arrived through is
+  (`items_source_guid_unique`, `server/db/schema.ts:127`) then keeps it a single
+  row and `upsertItem`'s dedupe stays correct. Consequence: which subfeed an item
+  arrived through is
   **not** persisted. Issue 07 resolves a subfeed view through the engine, or adds
   an `item_subfeeds` join if it needs cached filtering. No migration here.
 
@@ -141,15 +143,21 @@ and the schema input types — no `any`.
   sources page.
 - **Form** — `app/components/subfeeds/SubfeedForm.vue`: `name` plus a key/value
   query-param editor. Extract the param-rows half of
-  `app/components/sources/PaginationParamsEditor.vue` into a reusable
-  `QueryParamsEditor` that both use, rather than copy-pasting it. State on the
-  form that pagination is inherited from the source.
+  `app/components/sources/PaginationParamsEditor.vue` (its `paramRows` /
+  `syncQueryParams` / `addRow` / `removeRow` block) into a reusable
+  `QueryParamsEditor` that both use, rather than copy-pasting it. Keep the
+  collapsible's current styling — ghost trigger, no background, caret rotating
+  right→down via `group-data-[state=open]`. State on the form that pagination is
+  inherited from the source.
 - **Effective params** — show the merged result (parent overlaid with the
   subfeed's), marking which keys the subfeed overrides, so it is obvious what
   will be requested. Long values like the telex `filters` JSON need to stay
   readable — allow wrapping rather than truncating to one line.
 - **Entry point** — a "Subfeeds" item in the source-list row menu
   (`app/pages/sources/index.vue`) with a count badge from the task 5 helper.
+  That table now uses `table-fixed` with explicit per-column widths so the
+  group-by-tag tables stay aligned; a count in the row menu needs no new column,
+  but adding one means giving it a width and re-checking the existing fractions.
 - **Delete** — confirm, stating the subfeed goes but cached items stay (they
   belong to the parent source).
 - **Refresh** — summary toast, as the source refresh does.
