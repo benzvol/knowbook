@@ -7,13 +7,14 @@ export const useCategoriesStore = defineStore('categories', {
     loading: false,
   }),
   actions: {
-    async fetchAll() {
+    async fetchAll(): Promise<Category[]> {
       this.loading = true
       try {
         this.categories = await $fetch<Category[]>('/api/categories')
       } finally {
         this.loading = false
       }
+      return this.categories
     },
   },
 })

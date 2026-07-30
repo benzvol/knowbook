@@ -12,7 +12,7 @@ export const useSourcesStore = defineStore('sources', {
     error: null as string | null,
   }),
   actions: {
-    async fetchAll() {
+    async fetchAll(): Promise<Source[]> {
       this.loading = true
       this.error = null
       try {
@@ -22,6 +22,7 @@ export const useSourcesStore = defineStore('sources', {
       } finally {
         this.loading = false
       }
+      return this.sources
     },
 
     async fetchOne(id: number): Promise<Source | undefined> {
