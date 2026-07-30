@@ -44,6 +44,34 @@ describe('SourceForm', () => {
     expect(submitted![0]![0]).toMatchObject({
       title: 'My source',
       url: 'https://example.com/feed',
+      tagIds: [],
     })
+  })
+
+  it('pre-selects the tags of an existing source and includes them on submit', async () => {
+    const wrapper = await mountSuspended(SourceForm, {
+      props: {
+        source: {
+          id: 1,
+          url: 'https://example.com/feed',
+          title: 'My source',
+          type: 'standard',
+          managed: false,
+          categoryId: null,
+          pagination: null,
+          queryParams: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          tags: [{ id: 1, name: 'dev' }],
+        },
+      },
+    })
+
+    await wrapper.find('form').trigger('submit')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    const submitted = wrapper.emitted('submit')
+    expect(submitted).toBeTruthy()
+    expect(submitted![0]![0]).toMatchObject({ tagIds: [1] })
   })
 })
