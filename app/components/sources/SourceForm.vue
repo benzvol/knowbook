@@ -4,13 +4,15 @@ import {
   sourceCreateSchema,
   type SourceCreateInput,
 } from '#shared/schemas/source'
-import type { Source } from '#shared/types'
+import type { SourceWithTags } from '#shared/types'
 
-const props = defineProps<{ source?: Source; submitting?: boolean }>()
+const props = defineProps<{ source?: SourceWithTags; submitting?: boolean }>()
 const emit = defineEmits<{ submit: [payload: SourceCreateInput] }>()
 
 const categoriesStore = useCategoriesStore()
-await categoriesStore.fetchAll()
+const tagsStore = useTagsStore()
+const toast = useToast()
+await Promise.all([categoriesStore.fetchAll(), tagsStore.fetchAll()])
 
 const state = reactive<Partial<SourceCreateInput>>({
   url: props.source?.url,
@@ -20,6 +22,7 @@ const state = reactive<Partial<SourceCreateInput>>({
   categoryId: props.source?.categoryId ?? null,
   pagination: props.source?.pagination ?? null,
   queryParams: props.source?.queryParams ?? null,
+  tagIds: props.source?.tags.map((t) => t.id) ?? [],
 })
 
 const typeOptions = [
@@ -31,6 +34,19 @@ const categoryOptions = computed(() => [
   { label: '(none)', value: null },
   ...categoriesStore.categories.map((c) => ({ label: c.name, value: c.id })),
 ])
+
+async function onCreateTag(name: string) {
+  const tag = await tagsStore.create({ name })
+  if (tag) {
+    state.tagIds = [...(state.tagIds ?? []), tag.id]
+  } else {
+    toast.add({
+      title: 'Failed to create tag',
+      description: tagsStore.error ?? undefined,
+      color: 'error',
+    })
+  }
+}
 
 function onSubmit(event: FormSubmitEvent<SourceCreateInput>) {
   emit('submit', event.data)
@@ -71,6 +87,20 @@ function onSubmit(event: FormSubmitEvent<SourceCreateInput>) {
         :items="categoryOptions"
         value-key="value"
         class="w-full"
+      />
+    </UFormField>
+
+    <UFormField label="Tags" name="tagIds">
+      <USelectMenu
+        v-model="state.tagIds"
+        :items="tagsStore.tags"
+        value-key="id"
+        label-key="name"
+        multiple
+        create-item
+        placeholder="Select or create tags"
+        class="w-full"
+        @create="onCreateTag"
       />
     </UFormField>
 
