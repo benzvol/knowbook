@@ -1,5 +1,4 @@
-import { eq } from 'drizzle-orm'
-import { beforeEach, describe, expect, it } from 'vitest'
+﻿import { beforeEach, describe, expect, it } from 'vitest'
 import type { DB } from '~~/server/db/client'
 import * as schema from '~~/server/db/schema'
 import {
@@ -22,7 +21,7 @@ beforeEach(() => {
 
 describe('constraints', () => {
   it('rejects duplicate (sourceId, guid) items', () => {
-    const s = createSource({ url: 'u', title: 'A', type: 'standard' }, db)
+    const s = createSource({ url: 'u', title: 'A' }, db)
     createItem({ sourceId: s.id, guid: 'dup', title: 'One' }, db)
     expect(() =>
       createItem({ sourceId: s.id, guid: 'dup', title: 'Two' }, db),
@@ -30,15 +29,15 @@ describe('constraints', () => {
   })
 
   it('allows the same guid across different sources', () => {
-    const a = createSource({ url: 'a', title: 'A', type: 'standard' }, db)
-    const b = createSource({ url: 'b', title: 'B', type: 'standard' }, db)
+    const a = createSource({ url: 'a', title: 'A' }, db)
+    const b = createSource({ url: 'b', title: 'B' }, db)
     createItem({ sourceId: a.id, guid: 'g', title: 'in a' }, db)
     expect(() =>
       createItem({ sourceId: b.id, guid: 'g', title: 'in b' }, db),
     ).not.toThrow()
   })
 
-  it('rejects duplicate category/tag names (unique index)', () => {
+  it('rejects duplicate tag names (unique index)', () => {
     createTag({ name: 'tech' }, db)
     expect(() => createTag({ name: 'tech' }, db)).toThrow()
   })
@@ -50,7 +49,7 @@ describe('constraints', () => {
   })
 
   it('cascades delete from source to items, subfeeds, tags, feed membership', () => {
-    const s = createSource({ url: 'u', title: 'A', type: 'standard' }, db)
+    const s = createSource({ url: 'u', title: 'A' }, db)
     const tag = createTag({ name: 'daily' }, db)
     const feed = createFeed({ name: 'F' }, db)
     createItem({ sourceId: s.id, guid: 'i1', title: 'i1' }, db)
@@ -69,37 +68,18 @@ describe('constraints', () => {
   })
 
   it('keeps whole-source feed membership unique (partial index)', () => {
-    const s = createSource({ url: 'u', title: 'A', type: 'standard' }, db)
+    const s = createSource({ url: 'u', title: 'A' }, db)
     const feed = createFeed({ name: 'F' }, db)
     addFeedSource(feed.id, s.id, null, db)
     expect(() => addFeedSource(feed.id, s.id, null, db)).toThrow()
   })
 
   it('allows distinct subfeed memberships but rejects duplicates', () => {
-    const s = createSource({ url: 'u', title: 'A', type: 'standard' }, db)
+    const s = createSource({ url: 'u', title: 'A' }, db)
     const sf = createSubfeed({ sourceId: s.id, name: 'sub' }, db)
     const feed = createFeed({ name: 'F' }, db)
     addFeedSource(feed.id, s.id, sf.id, db)
     expect(() => addFeedSource(feed.id, s.id, sf.id, db)).toThrow()
   })
 
-  it('sets category_id null on category delete (set null)', () => {
-    const cat = db
-      .insert(schema.categories)
-      .values({ name: 'News' })
-      .returning()
-      .get()
-    const s = createSource(
-      { url: 'u', title: 'A', type: 'news', categoryId: cat.id },
-      db,
-    )
-    db.delete(schema.categories).where(eq(schema.categories.id, cat.id)).run()
-
-    const reloaded = db
-      .select()
-      .from(schema.sources)
-      .where(eq(schema.sources.id, s.id))
-      .get()
-    expect(reloaded?.categoryId).toBeNull()
-  })
 })
