@@ -3,7 +3,8 @@ import { drizzle } from 'drizzle-orm/better-sqlite3'
 import * as schema from './schema'
 
 /** Location of the SQLite database file (see Docker/compose env wiring). */
-export const DATABASE_PATH = process.env.DATABASE_PATH ?? './data/knowbook.sqlite'
+export const DATABASE_PATH =
+  process.env.DATABASE_PATH ?? './data/knowbook.sqlite'
 
 // better-sqlite3 is synchronous; the Drizzle instance is likewise sync.
 export type DB = ReturnType<typeof createDb>
