@@ -1,15 +1,15 @@
 import { createError, defineEventHandler } from 'h3'
-import { getSourceWithTags } from '../../db/repositories'
-import { getIdParam } from '../../utils/params'
+import { getSource, tagsForSource } from '../../../db/repositories'
+import { getIdParam } from '../../../utils/params'
 
 export default defineEventHandler((event) => {
   const id = getIdParam(event)
-  const source = getSourceWithTags(id)
+  const source = getSource(id)
   if (!source) {
     throw createError({
       statusCode: 404,
       statusMessage: `Source not found: ${id}`,
     })
   }
-  return source
+  return tagsForSource(id)
 })
