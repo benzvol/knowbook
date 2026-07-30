@@ -113,8 +113,11 @@ function onSubmit(event: FormSubmitEvent<SourceCreateInput>) {
       v-model:query-params="state.queryParams"
     />
 
-    <UButton type="submit" :loading="submitting">
-      {{ source ? 'Save changes' : 'Add source' }}
-    </UButton>
+    <div class="flex gap-2">
+      <UButton type="submit" :loading="submitting">
+        {{ source ? 'Save changes' : 'Add source' }}
+      </UButton>
+      <UButton label="Cancel" color="neutral" variant="subtle" to="/sources" />
+    </div>
   </UForm>
 </template>
