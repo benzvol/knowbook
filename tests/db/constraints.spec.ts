@@ -11,7 +11,6 @@ import {
   createSubfeed,
   createTag,
   deleteSource,
-  upsertItem,
 } from '~~/server/db/repositories'
 import { createTestDb } from './helpers'
 
