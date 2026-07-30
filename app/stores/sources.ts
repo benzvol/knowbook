@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { RefreshSummary, Source } from '#shared/types'
+import type { RefreshSummary, SourceWithTags, Tag } from '#shared/types'
 import type {
   SourceCreateInput,
   SourceUpdateInput,
@@ -7,16 +7,16 @@ import type {
 
 export const useSourcesStore = defineStore('sources', {
   state: () => ({
-    sources: [] as Source[],
+    sources: [] as SourceWithTags[],
     loading: false,
     error: null as string | null,
   }),
   actions: {
-    async fetchAll(): Promise<Source[]> {
+    async fetchAll(): Promise<SourceWithTags[]> {
       this.loading = true
       this.error = null
       try {
-        this.sources = await $fetch<Source[]>('/api/sources')
+        this.sources = await $fetch<SourceWithTags[]>('/api/sources')
       } catch (cause) {
         this.error = errorMessage(cause)
       } finally {
@@ -25,20 +25,22 @@ export const useSourcesStore = defineStore('sources', {
       return this.sources
     },
 
-    async fetchOne(id: number): Promise<Source | undefined> {
+    async fetchOne(id: number): Promise<SourceWithTags | undefined> {
       this.error = null
       try {
-        return await $fetch<Source>(`/api/sources/${id}`)
+        return await $fetch<SourceWithTags>(`/api/sources/${id}`)
       } catch (cause) {
         this.error = errorMessage(cause)
         return undefined
       }
     },
 
-    async create(input: SourceCreateInput): Promise<Source | undefined> {
+    async create(
+      input: SourceCreateInput,
+    ): Promise<SourceWithTags | undefined> {
       this.error = null
       try {
-        const created = await $fetch<Source>('/api/sources', {
+        const created = await $fetch<SourceWithTags>('/api/sources', {
           method: 'POST',
           body: input,
         })
@@ -53,10 +55,10 @@ export const useSourcesStore = defineStore('sources', {
     async update(
       id: number,
       patch: SourceUpdateInput,
-    ): Promise<Source | undefined> {
+    ): Promise<SourceWithTags | undefined> {
       this.error = null
       try {
-        const updated = await $fetch<Source>(`/api/sources/${id}`, {
+        const updated = await $fetch<SourceWithTags>(`/api/sources/${id}`, {
           method: 'PATCH',
           body: patch,
         })
@@ -96,12 +98,21 @@ export const useSourcesStore = defineStore('sources', {
         return undefined
       }
     },
+
+    async setTags(id: number, tagIds: number[]): Promise<Tag[] | undefined> {
+      this.error = null
+      try {
+        const tags = await $fetch<Tag[]>(`/api/sources/${id}/tags`, {
+          method: 'PUT',
+          body: { tagIds },
+        })
+        const index = this.sources.findIndex((s) => s.id === id)
+        if (index !== -1) this.sources[index]!.tags = tags
+        return tags
+      } catch (cause) {
+        this.error = errorMessage(cause)
+        return undefined
+      }
+    },
   },
 })
-
-function errorMessage(cause: unknown): string {
-  if (cause && typeof cause === 'object' && 'statusMessage' in cause) {
-    return String((cause as { statusMessage?: string }).statusMessage)
-  }
-  return cause instanceof Error ? cause.message : 'Unknown error'
-}
