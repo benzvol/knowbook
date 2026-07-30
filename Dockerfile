@@ -25,6 +25,7 @@ ENV NITRO_HOST=0.0.0.0
 ENV DATABASE_PATH=/data/knowbook.sqlite
 
 COPY --from=build /app/.output ./.output
+COPY --from=build /app/server/db/migrations ./server/db/migrations
 
 RUN mkdir -p /data
 VOLUME ["/data"]
