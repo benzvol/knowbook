@@ -19,9 +19,15 @@ export const sourceCreateSchema = z.object({
   categoryId: z.number().int().positive().nullable().optional(),
   pagination: paginationSchema.nullable().optional(),
   queryParams: queryParamsSchema.nullable().optional(),
+  tagIds: z.array(z.number().int().positive()).optional(),
 })
 
 export const sourceUpdateSchema = sourceCreateSchema.partial()
 
+export const sourceTagsSchema = z.object({
+  tagIds: z.array(z.number().int().positive()),
+})
+
 export type SourceCreateInput = z.infer<typeof sourceCreateSchema>
 export type SourceUpdateInput = z.infer<typeof sourceUpdateSchema>
+export type SourceTagsInput = z.infer<typeof sourceTagsSchema>

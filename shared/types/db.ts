@@ -23,6 +23,9 @@ export type NewTag = typeof tags.$inferInsert
 export type Source = typeof sources.$inferSelect
 export type NewSource = typeof sources.$inferInsert
 
+// A source hydrated with its tags, as returned by the list/get source routes.
+export type SourceWithTags = Source & { tags: Tag[] }
+
 export type SourceTag = typeof sourceTags.$inferSelect
 export type NewSourceTag = typeof sourceTags.$inferInsert
 
