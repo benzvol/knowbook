@@ -7,20 +7,21 @@ and expanded into individual files under [`issues/`](./issues/).
 
 ## 1. Goals
 
-- Manage (add / list / edit / remove) **sources**, organised by
-  categories/types and **tags**.
+- Manage (add / list / edit / remove) **sources**, organised by **tags** (the
+  single classification axis — see issue 04b).
 - Robust **pagination** using standard and source-specific custom query params
   (e.g. `page`, `limit`).
-- **Subfeeds** (subsources) derived from a source via custom query params —
-  including per-**column** views of a news-type source.
+- **Subfeeds** (subsources) derived from a source via custom query params. A
+  "column" is simply a subfeed; showing siblings side-by-side is a view concern.
 - **Compose feeds** aggregating items from multiple sources.
 - Consistent **content views** across sources, subfeeds and feeds: filtering,
   automatic sorting, full-text search over title & description, and
   _search-until-found_ pagination with a configurable page cap.
 - **Bookmarks** with filtering plus automatic **and** manual (drag-and-drop)
   sorting.
-- **App-managed sources** defined in a config file (URL, pagination params,
-  item tags, columns, …), designed to extend later into scraping and TTS.
+- **Maintainer-managed sources** defined in a config file (URL, pagination params,
+  item tags, subfeeds, …), loadable by the user but not user-editable; designed to
+  grow into per-source plugin-style handling and later scraping and TTS.
 - **Export / import** of sources, feeds, bookmarks and settings.
 - **Light** (beige) and **dark** (dark brown) themes.
 
@@ -72,19 +73,25 @@ to remote feeds (avoids CORS and keeps parsing server-side).
 
 ### Core domain model (indicative)
 
-- **Source** — url, type (`news` | `standard`), pagination config, custom query
-  params, `managed` flag, category, tags.
-- **Category / Type**, **Tag** (+ join tables) — grouping and tagging.
-- **Subfeed** — belongs to a Source; defined by extra query params. A **Column**
-  is a specialised subfeed keyed by a source-specific query param.
+- **Source** — url, pagination config, custom query params, `managed` flag, tags.
+- **Tag** (+ join table) — the one source-classification axis. Tags organise,
+  Feeds are what you read, Subfeeds slice a single source.
+- **Subfeed** — belongs to a Source; defined by extra query params merged over
+  the parent's, with the parent's pagination inherited. A **Column** is just a
+  subfeed (its distinguishing value may sit inside a JSON-encoded param).
 - **Feed** — user-defined aggregate; many-to-many with Sources/Subfeeds.
 - **Item** — normalised, cached feed entry (guid, title, description, link,
   publishedAt, tags, sourceId).
 - **Bookmark** — references an Item; carries manual `sortOrder` and tags.
 - **Setting** — key/value (theme, default page size, search cap, …).
 
-_App-managed_ sources are seeded from a config file and reconciled on startup;
-users can also "save as managed" to promote an existing source.
+_Managed_ sources are declared by the app **maintainer** in a config file and
+reconciled on startup; the user opts which to load into their sources list but
+cannot create or edit them, and `managed` is never writable from the client. The
+config is the extension point for handling individual sources' quirks in a
+plugin-like way. Promoting a user source to managed is deliberately **not** a
+feature — a script can lift its properties from an export (issue 10) into the
+config file instead.
 
 ## 5. Cross-Cutting Concerns
 
@@ -100,7 +107,7 @@ users can also "save as managed" to promote an existing source.
 ## 6. Delivery Phases
 
 1. **Foundation** — scaffolding, tooling, persistence, fetch/parse engine.
-2. **Sources** — CRUD, categories/types, tags; subfeeds & columns.
+2. **Sources** — CRUD, tags; subfeeds.
 3. **Aggregation & consumption** — composed feeds; shared content views.
 4. **Curation** — bookmarks with manual sorting.
 5. **Platform** — managed-source config, export/import, settings & theming.

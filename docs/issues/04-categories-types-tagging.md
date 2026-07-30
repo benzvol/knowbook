@@ -14,6 +14,12 @@ affects: [app, server, tests]
 > Part of the [implementation plan](../00-plan.md). See the
 > [issue index](../01-issues.md) for ordering and dependencies.
 
+> **Partly superseded by [04b — Simplify classification](./04b-simplify-classification.md).**
+> Categories and `sources.type` were subsequently dropped in favour of tags
+> alone; the source list's grouping was re-keyed onto tags. The body below is
+> kept as the historical record of what this issue delivered — read 04b for the
+> current model and the reasoning.
+
 ## Goal
 
 Turn the classification seams left open by issue 03 into a usable feature: full
