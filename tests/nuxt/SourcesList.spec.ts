@@ -14,9 +14,7 @@ function makeSource(overrides: Partial<SourceWithTags> = {}): SourceWithTags {
     id: 1,
     url: 'https://example.com/feed',
     title: 'Source',
-    type: 'standard',
     managed: false,
-    categoryId: null,
     pagination: null,
     queryParams: null,
     createdAt: new Date(),
@@ -26,21 +24,16 @@ function makeSource(overrides: Partial<SourceWithTags> = {}): SourceWithTags {
   }
 }
 
-const tech = { id: 1, name: 'Technology' }
-const news = { id: 2, name: 'News' }
 const dev = { id: 1, name: 'dev' }
 const daily = { id: 2, name: 'daily' }
+const world = { id: 3, name: 'world' }
 
 const sources = [
-  makeSource({ id: 1, title: 'Hacker News', categoryId: tech.id, tags: [dev] }),
-  makeSource({
-    id: 2,
-    title: 'BBC News',
-    type: 'news',
-    categoryId: news.id,
-    tags: [daily],
-  }),
-  makeSource({ id: 3, title: 'Lobsters', categoryId: null, tags: [] }),
+  makeSource({ id: 1, title: 'Hacker News', tags: [dev] }),
+  // Two tags on purpose, so grouping must repeat it. It deliberately does not
+  // carry `dev`, so the AND-semantics test below still matches nothing.
+  makeSource({ id: 2, title: 'BBC News', tags: [daily, world] }),
+  makeSource({ id: 3, title: 'Lobsters', tags: [] }),
 ]
 
 beforeEach(() => {
@@ -49,25 +42,13 @@ beforeEach(() => {
   fetchMock.mockReset()
   fetchMock.mockImplementation((url: string) => {
     if (url === '/api/sources') return Promise.resolve(sources)
-    if (url === '/api/categories') return Promise.resolve([tech, news])
-    if (url === '/api/tags') return Promise.resolve([dev, daily])
+    // Unsorted on purpose: the grouped view must order the groups itself.
+    if (url === '/api/tags') return Promise.resolve([dev, world, daily])
     return Promise.resolve([])
   })
 })
 
 describe('sources list page', () => {
-  it('filters by type', async () => {
-    const wrapper = await mountSuspended(SourcesIndexPage)
-    await wrapper.vm.$nextTick()
-
-    const typeSelect = wrapper.findComponent({ name: 'USelect' })
-    await typeSelect.vm.$emit('update:modelValue', 'news')
-    await wrapper.vm.$nextTick()
-
-    expect(wrapper.text()).toContain('BBC News')
-    expect(wrapper.text()).not.toContain('Hacker News')
-  })
-
   it('applies AND semantics across selected tags', async () => {
     const wrapper = await mountSuspended(SourcesIndexPage)
     await wrapper.vm.$nextTick()
@@ -80,7 +61,20 @@ describe('sources list page', () => {
     expect(wrapper.text()).toContain('No sources match these filters.')
   })
 
-  it('groups by category with an Uncategorised section', async () => {
+  it('matches a source carrying every selected tag', async () => {
+    const wrapper = await mountSuspended(SourcesIndexPage)
+    await wrapper.vm.$nextTick()
+
+    const tagFilter = wrapper.findComponent({ name: 'USelectMenu' })
+    await tagFilter.vm.$emit('update:modelValue', [daily.id, world.id])
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.text()).toContain('BBC News')
+    expect(wrapper.text()).not.toContain('Hacker News')
+    expect(wrapper.text()).not.toContain('Lobsters')
+  })
+
+  it('groups by tag, repeating multi-tagged sources, with a trailing Untagged section', async () => {
     const wrapper = await mountSuspended(SourcesIndexPage)
     await wrapper.vm.$nextTick()
 
@@ -88,9 +82,27 @@ describe('sources list page', () => {
     await groupSwitch.vm.$emit('update:modelValue', true)
     await wrapper.vm.$nextTick()
 
-    expect(wrapper.text()).toContain('Technology (1)')
-    expect(wrapper.text()).toContain('News (1)')
-    expect(wrapper.text()).toContain('Uncategorised (1)')
+    // The counts are load-bearing: the Tags column renders a badge per tag, so
+    // the bare tag name appears in the text whether or not grouping works.
+    expect(wrapper.text()).toContain('daily (1)')
+    expect(wrapper.text()).toContain('dev (1)')
+    expect(wrapper.text()).toContain('world (1)')
+    expect(wrapper.text()).toContain('Untagged (1)')
+
+    // One table per group, alphabetical by tag name with Untagged last. BBC News
+    // appears twice because it carries two tags.
+    const rowsPerGroup = wrapper
+      .findAllComponents({ name: 'UTable' })
+      .map((table) =>
+        (table.props('data') as SourceWithTags[]).map((s) => s.title),
+      )
+
+    expect(rowsPerGroup).toEqual([
+      ['BBC News'], // daily
+      ['Hacker News'], // dev
+      ['BBC News'], // world
+      ['Lobsters'], // Untagged
+    ])
   })
 
   it('shows the no-sources-yet message distinct from no-matches', async () => {

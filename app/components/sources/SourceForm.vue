@@ -9,31 +9,19 @@ import type { SourceWithTags } from '#shared/types'
 const props = defineProps<{ source?: SourceWithTags; submitting?: boolean }>()
 const emit = defineEmits<{ submit: [payload: SourceCreateInput] }>()
 
-const categoriesStore = useCategoriesStore()
 const tagsStore = useTagsStore()
 const toast = useToast()
-await Promise.all([categoriesStore.fetchAll(), tagsStore.fetchAll()])
+await tagsStore.fetchAll()
 
+// `managed` is intentionally not editable here — it is written only by the
+// managed-source config loader, never from a client payload.
 const state = reactive<Partial<SourceCreateInput>>({
   url: props.source?.url,
   title: props.source?.title,
-  type: props.source?.type ?? 'standard',
-  managed: props.source?.managed ?? false,
-  categoryId: props.source?.categoryId ?? null,
   pagination: props.source?.pagination ?? null,
   queryParams: props.source?.queryParams ?? null,
   tagIds: props.source?.tags.map((t) => t.id) ?? [],
 })
-
-const typeOptions = [
-  { label: 'Standard', value: 'standard' },
-  { label: 'News', value: 'news' },
-]
-
-const categoryOptions = computed(() => [
-  { label: '(none)', value: null },
-  ...categoriesStore.categories.map((c) => ({ label: c.name, value: c.id })),
-])
 
 async function onCreateTag(name: string) {
   const tag = await tagsStore.create({ name })
@@ -72,24 +60,6 @@ function onSubmit(event: FormSubmitEvent<SourceCreateInput>) {
       />
     </UFormField>
 
-    <UFormField label="Type" name="type">
-      <USelect
-        v-model="state.type"
-        :items="typeOptions"
-        value-key="value"
-        class="w-full"
-      />
-    </UFormField>
-
-    <UFormField label="Category" name="categoryId">
-      <USelect
-        v-model="state.categoryId"
-        :items="categoryOptions"
-        value-key="value"
-        class="w-full"
-      />
-    </UFormField>
-
     <UFormField label="Tags" name="tagIds">
       <USelectMenu
         v-model="state.tagIds"
@@ -102,10 +72,6 @@ function onSubmit(event: FormSubmitEvent<SourceCreateInput>) {
         class="w-full"
         @create="onCreateTag"
       />
-    </UFormField>
-
-    <UFormField name="managed">
-      <UCheckbox v-model="state.managed" label="Managed source" />
     </UFormField>
 
     <SourcesPaginationParamsEditor

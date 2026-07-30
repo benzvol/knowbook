@@ -11,12 +11,13 @@ export const paginationSchema = z
 
 export const queryParamsSchema = z.record(z.string(), z.string())
 
+// `managed` is deliberately absent: it means "declared by the app maintainer in
+// a config file", so only the config loader may write it. The schema is
+// non-strict, so a `managed` key in a request body is stripped rather than
+// rejected.
 export const sourceCreateSchema = z.object({
   url: z.url(),
   title: z.string().min(1),
-  type: z.enum(['news', 'standard']).default('standard'),
-  managed: z.boolean().default(false),
-  categoryId: z.number().int().positive().nullable().optional(),
   pagination: paginationSchema.nullable().optional(),
   queryParams: queryParamsSchema.nullable().optional(),
   tagIds: z.array(z.number().int().positive()).optional(),

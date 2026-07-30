@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import type { SourceType, SourceWithTags } from '#shared/types'
+import type { SourceWithTags } from '#shared/types'
 
 useHead({ title: 'Sources · Knowbook' })
 
@@ -10,7 +10,6 @@ const UButton = resolveComponent('UButton')
 const UDropdownMenu = resolveComponent('UDropdownMenu')
 
 const store = useSourcesStore()
-const categoriesStore = useCategoriesStore()
 const tagsStore = useTagsStore()
 const toast = useToast()
 const pendingDeleteId = ref<number | null>(null)
@@ -22,31 +21,18 @@ const deleteModalOpen = computed({
 })
 
 await useAsyncData('sources', () =>
-  Promise.all([
-    store.fetchAll(),
-    categoriesStore.fetchAll(),
-    tagsStore.fetchAll(),
-  ]),
+  Promise.all([store.fetchAll(), tagsStore.fetchAll()]),
 )
 
-const typeFilter = ref<SourceType | 'all'>('all')
-const typeFilterOptions = [
-  { label: 'All types', value: 'all' as const },
-  { label: 'Standard', value: 'standard' as const },
-  { label: 'News', value: 'news' as const },
-]
 const tagFilter = ref<number[]>([])
-const groupByCategory = ref(false)
+const groupByTag = ref(false)
 
 const filtered = computed(() =>
-  store.sources.filter((source) => {
-    if (typeFilter.value !== 'all' && source.type !== typeFilter.value) {
-      return false
-    }
-    return tagFilter.value.every((tagId) =>
+  store.sources.filter((source) =>
+    tagFilter.value.every((tagId) =>
       source.tags.some((tag) => tag.id === tagId),
-    )
-  }),
+    ),
+  ),
 )
 
 const noSourcesYet = computed(
@@ -57,61 +43,82 @@ const noMatches = computed(
     !store.loading && store.sources.length > 0 && filtered.value.length === 0,
 )
 
-interface CategoryGroup {
+interface TagGroup {
   key: string
   label: string
   count: number
   sources: SourceWithTags[]
 }
 
-const groups = computed<CategoryGroup[]>(() => {
-  const byCategory = new Map<number | null, SourceWithTags[]>()
+const groups = computed<TagGroup[]>(() => {
+  // Labels come from each source's own hydrated tags rather than the tag store,
+  // so a source can never drop out of the grouped view if the store is stale.
+  const byTag = new Map<number, { name: string; sources: SourceWithTags[] }>()
+  const untagged: SourceWithTags[] = []
+
   for (const source of filtered.value) {
-    const key = source.categoryId
-    const list = byCategory.get(key)
-    if (list) list.push(source)
-    else byCategory.set(key, [source])
+    if (source.tags.length === 0) {
+      untagged.push(source)
+      continue
+    }
+    // A source with several tags is pushed into each of their buckets on
+    // purpose: the grouped view shows it under every tag it carries.
+    for (const tag of source.tags) {
+      const bucket = byTag.get(tag.id)
+      if (bucket) bucket.sources.push(source)
+      else byTag.set(tag.id, { name: tag.name, sources: [source] })
+    }
   }
 
-  const named = categoriesStore.categories
-    .filter((c) => byCategory.has(c.id))
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map((c) => ({
-      key: String(c.id),
-      label: c.name,
-      count: byCategory.get(c.id)!.length,
-      sources: byCategory.get(c.id)!,
+  const named = [...byTag.entries()]
+    .sort(([, a], [, b]) => a.name.localeCompare(b.name))
+    .map(([id, { name, sources }]) => ({
+      key: String(id),
+      label: name,
+      count: sources.length,
+      sources,
     }))
 
-  const uncategorised = byCategory.get(null)
-  if (uncategorised?.length) {
+  // Appended rather than sorted in, so it always trails the named tags.
+  if (untagged.length) {
     named.push({
-      key: 'uncategorised',
-      label: 'Uncategorised',
-      count: uncategorised.length,
-      sources: uncategorised,
+      key: 'untagged',
+      label: 'Untagged',
+      count: untagged.length,
+      sources: untagged,
     })
   }
 
   return named
 })
 
+// Fixed layout plus explicit widths, so every group's table lines up with the
+// others instead of each sizing itself to its own longest URL.
+const tableUi = { base: 'table-fixed w-full' }
+
 const columns: TableColumn<SourceWithTags>[] = [
-  { accessorKey: 'title', header: 'Title' },
-  { accessorKey: 'url', header: 'URL' },
   {
-    accessorKey: 'type',
-    header: 'Type',
+    accessorKey: 'title',
+    header: 'Title',
+    meta: { class: { th: 'w-1/4', td: 'truncate' } },
+  },
+  {
+    accessorKey: 'url',
+    header: 'URL',
+    meta: { class: { th: 'w-2/5', td: 'truncate' } },
+    // Long feed URLs are truncated rather than allowed to widen the column;
+    // the full value stays available as a tooltip.
     cell: ({ row }) =>
       h(
-        UBadge,
-        { variant: 'subtle', color: 'neutral' },
-        () => row.original.type,
+        'span',
+        { class: 'block truncate text-muted', title: row.original.url },
+        row.original.url,
       ),
   },
   {
     id: 'tags',
     header: 'Tags',
+    meta: { class: { th: 'w-1/4' } },
     cell: ({ row }) =>
       h(
         'div',
@@ -126,15 +133,8 @@ const columns: TableColumn<SourceWithTags>[] = [
       ),
   },
   {
-    accessorKey: 'managed',
-    header: 'Managed',
-    cell: ({ row }) =>
-      row.original.managed
-        ? h(UBadge, { variant: 'subtle', color: 'primary' }, () => 'Managed')
-        : null,
-  },
-  {
     id: 'actions',
+    meta: { class: { th: 'w-16' } },
     cell: ({ row }) =>
       h(
         UDropdownMenu,
@@ -219,16 +219,7 @@ async function confirmDelete() {
       :title="store.error"
     />
 
-    <div v-if="store.sources.length" class="flex flex-wrap items-end gap-4">
-      <UFormField label="Type">
-        <USelect
-          v-model="typeFilter"
-          :items="typeFilterOptions"
-          value-key="value"
-          class="w-40"
-        />
-      </UFormField>
-
+    <div v-if="store.sources.length" class="flex flex-wrap items-center gap-6">
       <UFormField
         label="Tags"
         description="Shows sources with all selected tags."
@@ -244,11 +235,11 @@ async function confirmDelete() {
         />
       </UFormField>
 
-      <USwitch v-model="groupByCategory" label="Group by category" />
+      <USwitch v-model="groupByTag" label="Group by tag" />
     </div>
 
     <template v-if="filtered.length">
-      <div v-if="groupByCategory" class="flex flex-col gap-6">
+      <div v-if="groupByTag" class="flex flex-col gap-6">
         <div
           v-for="group in groups"
           :key="group.key"
@@ -257,13 +248,14 @@ async function confirmDelete() {
           <h2 class="font-medium text-highlighted">
             {{ group.label }} ({{ group.count }})
           </h2>
-          <UTable :data="group.sources" :columns="columns" />
+          <UTable :data="group.sources" :columns="columns" :ui="tableUi" />
         </div>
       </div>
       <UTable
         v-else
         :data="filtered"
         :columns="columns"
+        :ui="tableUi"
         :loading="store.loading"
       />
     </template>

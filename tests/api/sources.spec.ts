@@ -8,7 +8,6 @@ vi.mock('~~/server/db/repositories', () => ({
   createSource: vi.fn(),
   updateSource: vi.fn(),
   deleteSource: vi.fn(),
-  listCategories: vi.fn(),
   listSourcesWithTags: vi.fn(),
   getSourceWithTags: vi.fn(),
   tagsForSource: vi.fn(),
@@ -40,9 +39,7 @@ function makeSource(overrides: Partial<SourceWithTags> = {}): SourceWithTags {
     id: 1,
     url: 'https://example.com/feed',
     title: 'Test source',
-    type: 'standard',
     managed: false,
-    categoryId: null,
     pagination: null,
     queryParams: null,
     createdAt: new Date(),
@@ -181,6 +178,30 @@ describe('POST /api/sources', () => {
     expect((await res.json()).tags).toHaveLength(2)
   })
 
+  it('ignores a managed flag in the body instead of persisting it', async () => {
+    createSource.mockReturnValue(makeSource())
+
+    const res = await handler(
+      new Request('http://localhost/api/sources', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          url: 'https://example.com/feed',
+          title: 'Test',
+          managed: true,
+        }),
+      }),
+    )
+
+    // `managed` is server-owned (written only by the config loader), so the
+    // schema strips it rather than rejecting the request.
+    expect(res.status).toBe(201)
+    expect(createSource).toHaveBeenCalledWith(
+      expect.not.objectContaining({ managed: expect.anything() }),
+    )
+    expect((await res.json()).managed).toBe(false)
+  })
+
   it('rejects unknown tag ids with 400 and does not create the source', async () => {
     findTagsByIds.mockReturnValue([])
 
@@ -214,6 +235,26 @@ describe('PATCH /api/sources/:id', () => {
     )
 
     expect(res.status).toBe(404)
+  })
+
+  it('ignores a managed flag in the body instead of persisting it', async () => {
+    updateSource.mockReturnValue(makeSource())
+    tagsForSource.mockReturnValue([])
+
+    const res = await handler(
+      new Request('http://localhost/api/sources/1', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ title: 'Renamed', managed: true }),
+      }),
+    )
+
+    expect(res.status).toBe(200)
+    expect(updateSource).toHaveBeenCalledWith(
+      1,
+      expect.not.objectContaining({ managed: expect.anything() }),
+    )
+    expect((await res.json()).managed).toBe(false)
   })
 
   it('leaves tags untouched when tagIds is omitted', async () => {

@@ -11,7 +11,6 @@ import type {
   PaginationConfig,
   QueryParams,
   SettingValue,
-  SourceType,
 } from '#shared/types/domain'
 
 // Timestamps are stored as integer epoch-milliseconds and surfaced as JS Date.
@@ -24,15 +23,6 @@ const updatedAt = () =>
   integer('updated_at', { mode: 'timestamp_ms' })
     .notNull()
     .$defaultFn(() => new Date())
-
-export const categories = sqliteTable(
-  'categories',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    name: text('name').notNull(),
-  },
-  (t) => [uniqueIndex('categories_name_unique').on(t.name)],
-)
 
 export const tags = sqliteTable(
   'tags',
@@ -47,11 +37,8 @@ export const sources = sqliteTable('sources', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   url: text('url').notNull(),
   title: text('title').notNull(),
-  type: text('type').$type<SourceType>().notNull().default('standard'),
+  // Server-owned: only the managed-source config loader writes this.
   managed: integer('managed', { mode: 'boolean' }).notNull().default(false),
-  categoryId: integer('category_id').references(() => categories.id, {
-    onDelete: 'set null',
-  }),
   pagination: text('pagination', { mode: 'json' }).$type<PaginationConfig>(),
   queryParams: text('query_params', { mode: 'json' }).$type<QueryParams>(),
   createdAt: createdAt(),
@@ -78,8 +65,6 @@ export const subfeeds = sqliteTable('subfeeds', {
     .references(() => sources.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   queryParams: text('query_params', { mode: 'json' }).$type<QueryParams>(),
-  // Marks a news "column" subfeed keyed by a source-specific query param.
-  columnParam: text('column_param'),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 })

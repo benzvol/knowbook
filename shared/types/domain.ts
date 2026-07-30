@@ -2,9 +2,6 @@
 // These have no runtime dependencies and are safe to import from either side;
 // they also back the JSON columns in the DB schema via Drizzle's `.$type<>()`.
 
-/** A source is either a standard RSS/Atom feed or a paginated news-style feed. */
-export type SourceType = 'news' | 'standard'
-
 /**
  * How to paginate a source. Query-param names are configurable because feeds
  * differ (e.g. `page`/`limit` vs `p`/`per_page`).

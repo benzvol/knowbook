@@ -1,11 +1,10 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+﻿import { beforeEach, describe, expect, it } from 'vitest'
 import type { DB } from '~~/server/db/client'
 import * as schema from '~~/server/db/schema'
 import {
   addFeedSource,
   attachTag,
   createBookmark,
-  createCategory,
   createFeed,
   createItem,
   createSource,
@@ -35,7 +34,6 @@ describe('round-trips', () => {
       {
         url: 'https://example.com/rss',
         title: 'Example',
-        type: 'news',
         managed: true,
         pagination: { pageParam: 'page', sizeParam: 'limit', pageSize: 25 },
         queryParams: { lang: 'en' },
@@ -58,13 +56,13 @@ describe('round-trips', () => {
   })
 
   it('updates a source and bumps updatedAt', () => {
-    const s = createSource({ url: 'u', title: 'A', type: 'standard' }, db)
+    const s = createSource({ url: 'u', title: 'A' }, db)
     const updated = updateSource(s.id, { title: 'B' }, db)
     expect(updated?.title).toBe('B')
   })
 
   it('attaches tags to a source', () => {
-    const s = createSource({ url: 'u', title: 'A', type: 'standard' }, db)
+    const s = createSource({ url: 'u', title: 'A' }, db)
     const t1 = createTag({ name: 'tech' }, db)
     const t2 = createTag({ name: 'daily' }, db)
     attachTag(s.id, t1.id, db)
@@ -75,7 +73,7 @@ describe('round-trips', () => {
   })
 
   it('adds sources and subfeeds to a feed', () => {
-    const s = createSource({ url: 'u', title: 'A', type: 'standard' }, db)
+    const s = createSource({ url: 'u', title: 'A' }, db)
     const sf = createSubfeed({ sourceId: s.id, name: 'Politics' }, db)
     const feed = createFeed({ name: 'Morning' }, db)
 
@@ -83,15 +81,6 @@ describe('round-trips', () => {
     addFeedSource(feed.id, s.id, sf.id, db)
 
     expect(feedMembers(feed.id, db)).toHaveLength(2)
-  })
-
-  it('stores category grouping', () => {
-    const c = createCategory({ name: 'News' }, db)
-    const s = createSource(
-      { url: 'u', title: 'A', type: 'news', categoryId: c.id },
-      db,
-    )
-    expect(s.categoryId).toBe(c.id)
   })
 
   it('reads and writes JSON settings', () => {
@@ -105,7 +94,7 @@ describe('round-trips', () => {
   })
 
   it('reorders bookmarks by persisting sortOrder', () => {
-    const s = createSource({ url: 'u', title: 'A', type: 'standard' }, db)
+    const s = createSource({ url: 'u', title: 'A' }, db)
     const mk = (guid: string) =>
       createItem({ sourceId: s.id, guid, title: guid }, db)
     const i1 = mk('a')
@@ -124,7 +113,7 @@ describe('round-trips', () => {
 
 describe('items caching', () => {
   it('upserts by (sourceId, guid) instead of duplicating', () => {
-    const s = createSource({ url: 'u', title: 'A', type: 'standard' }, db)
+    const s = createSource({ url: 'u', title: 'A' }, db)
     upsertItem({ sourceId: s.id, guid: 'x', title: 'First' }, db)
     const second = upsertItem(
       { sourceId: s.id, guid: 'x', title: 'Updated' },

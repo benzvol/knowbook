@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+﻿import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { DB } from '~~/server/db/client'
 import { createSource, itemsForSource } from '~~/server/db/repositories'
 import { refreshSource } from '~~/server/feed/refresh'
@@ -20,7 +20,7 @@ function fakeFetchImpl(body: string): typeof fetch {
 describe('refreshSource', () => {
   it('inserts new items on first run', async () => {
     const source = createSource(
-      { url: 'https://example.com/feed', title: 'Test', type: 'standard' },
+      { url: 'https://example.com/feed', title: 'Test' },
       db,
     )
 
@@ -41,7 +41,7 @@ describe('refreshSource', () => {
 
   it('updates existing items instead of duplicating on re-run', async () => {
     const source = createSource(
-      { url: 'https://example.com/feed', title: 'Test', type: 'standard' },
+      { url: 'https://example.com/feed', title: 'Test' },
       db,
     )
 

@@ -3,7 +3,6 @@
 // runtime (schema, better-sqlite3) leaks into the client bundle.
 import type {
   bookmarks,
-  categories,
   feeds,
   feedSources,
   items,
@@ -13,9 +12,6 @@ import type {
   subfeeds,
   tags,
 } from '~~/server/db/schema'
-
-export type Category = typeof categories.$inferSelect
-export type NewCategory = typeof categories.$inferInsert
 
 export type Tag = typeof tags.$inferSelect
 export type NewTag = typeof tags.$inferInsert
