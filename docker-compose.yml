@@ -7,10 +7,8 @@ services:
       NODE_ENV: production
       NITRO_PORT: '3000'
       NITRO_HOST: 0.0.0.0
-      # SQLite database path inside the container (persisted below).
       DATABASE_PATH: /data/knowbook.sqlite
     volumes:
-      # Persist the SQLite database file across container restarts.
       - knowbook-data:/data
     restart: unless-stopped
 
