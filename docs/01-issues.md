@@ -15,7 +15,8 @@ platform concerns.
 | 02  | Feed fetch & parse engine     | 01         |
 | 03  | Source management             | 01, 02     |
 | 04  | Categories, types & tagging   | 03         |
-| 05  | Subfeeds & columns            | 03         |
+| 04b | Simplify classification       | 04         |
+| 05  | Subfeeds                      | 03, 04b    |
 | 06  | Composed feeds                | 03, 05     |
 | 07  | Shared content views          | 02, 03     |
 | 08  | Bookmarks                     | 07         |
@@ -35,7 +36,7 @@ every later issue lands on a working foundation.
 ## 01 — Persistence & data layer
 
 Introduce SQLite + Drizzle with drizzle-kit migrations. Model the core domain
-(sources, categories/types, tags, subfeeds, feeds, items, bookmarks, settings)
+(sources, tags, subfeeds, feeds, items, bookmarks, settings)
 and expose a typed data-access layer the server routes build on.
 
 ## 02 — Feed fetch & parse engine
@@ -53,13 +54,23 @@ end-to-end vertical slice tying persistence, engine and UI together.
 ## 04 — Categories, types & tagging
 
 Let users classify sources by category/type and apply free-form tags; surface
-grouping and tag-based filtering in the source list.
+grouping and tag-based filtering in the source list. Partly superseded by 04b.
 
-## 05 — Subfeeds & columns
+## 04b — Simplify classification
 
-Derive subfeeds from a source using custom query params, plus a specialised
-"columns" view for news-type sources keyed by a source-specific param. Manage
-(add / list / edit / remove) subfeeds under their parent source.
+Collapse the overlapping classification axes onto **tags** alone: drop
+`sources.type` (no behaviour — the engine branches on `pagination`), the
+`categories` table (tags subsume it; composed feeds cover reading-time grouping),
+and the unused `subfeeds.columnParam`. Re-key the source list's grouping onto
+tags.
+
+## 05 — Subfeeds
+
+Derive named subfeeds from a source using extra query params merged over the
+parent's, and manage (add / list / edit / remove) plus refresh them under their
+parent source. A "column" is simply a subfeed — the distinguishing value can sit
+inside a JSON-encoded param, which the old `columnParam` model could not express;
+showing siblings side-by-side is a view concern in issue 07.
 
 ## 06 — Composed feeds
 
@@ -80,9 +91,17 @@ subfeed or feed view.
 
 ## 09 — Managed sources from config
 
-Load app-managed sources from a config file (URL, pagination, custom params,
-item tags, columns), reconciled on startup. Allow promoting an existing source
-to "managed", and reserve schema seams for later scraping / TTS.
+Load app-**maintainer**-managed sources from a config file (URL, pagination,
+custom params, item tags, subfeeds), reconciled on startup; the user chooses which
+to load into their own sources list. Designed to grow into per-source plugin-style
+handling of individual sources' quirks, and reserves schema seams for later
+scraping / TTS.
+
+Users cannot create or edit managed sources, and the planned _"save as managed"_
+promotion is **dropped**: `managed` is written only by the config loader (see
+04b). Once export exists (issue 10), a small script can lift a source's properties
+out of an export into the config file, which covers the same need without a
+user-facing write path.
 
 ## 10 — Export & import
 
