@@ -5,7 +5,7 @@ description: >-
   Derive named subfeeds from a source via extra query params merged over the
   parent's, and manage (add / list / edit / remove) plus refresh them under
   their parent source.
-status: todo
+status: done
 dependencies: ["03", "04b"]
 affects: [app, server, tests]
 ---
