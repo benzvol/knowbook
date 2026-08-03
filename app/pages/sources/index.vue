@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import type { SourceWithTags } from '#shared/types'
+import type { SourceListItem } from '#shared/types'
 
 useHead({ title: 'Sources · Knowbook' })
 
@@ -47,14 +47,14 @@ interface TagGroup {
   key: string
   label: string
   count: number
-  sources: SourceWithTags[]
+  sources: SourceListItem[]
 }
 
 const groups = computed<TagGroup[]>(() => {
   // Labels come from each source's own hydrated tags rather than the tag store,
   // so a source can never drop out of the grouped view if the store is stale.
-  const byTag = new Map<number, { name: string; sources: SourceWithTags[] }>()
-  const untagged: SourceWithTags[] = []
+  const byTag = new Map<number, { name: string; sources: SourceListItem[] }>()
+  const untagged: SourceListItem[] = []
 
   for (const source of filtered.value) {
     if (source.tags.length === 0) {
@@ -96,7 +96,7 @@ const groups = computed<TagGroup[]>(() => {
 // others instead of each sizing itself to its own longest URL.
 const tableUi = { base: 'table-fixed w-full' }
 
-const columns: TableColumn<SourceWithTags>[] = [
+const columns: TableColumn<SourceListItem>[] = [
   {
     accessorKey: 'title',
     header: 'Title',
@@ -144,6 +144,13 @@ const columns: TableColumn<SourceWithTags>[] = [
               label: 'Edit',
               icon: 'i-ph-pencil',
               to: `/sources/${row.original.id}/edit`,
+            },
+            {
+              label: row.original.subfeedCount
+                ? `Subfeeds (${row.original.subfeedCount})`
+                : 'Subfeeds',
+              icon: 'i-ph-stack',
+              to: `/sources/${row.original.id}/subfeeds`,
             },
             {
               label: 'Refresh',

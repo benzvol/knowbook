@@ -1,7 +1,13 @@
 import { eq } from 'drizzle-orm'
-import type { NewSource, Source, SourceWithTags } from '#shared/types'
+import type {
+  NewSource,
+  Source,
+  SourceListItem,
+  SourceWithTags,
+} from '#shared/types'
 import { db, type DB } from '../client'
 import { sources } from '../schema'
+import { subfeedCountsForSources } from './subfeeds'
 import { tagsForSources } from './tags'
 
 export function listSources(database: DB = db): Source[] {
@@ -12,16 +18,17 @@ export function getSource(id: number, database: DB = db): Source | undefined {
   return database.select().from(sources).where(eq(sources.id, id)).get()
 }
 
-// Hydrated variants used by the source read routes, avoiding an N+1 tag query.
-export function listSourcesWithTags(database: DB = db): SourceWithTags[] {
+// Hydrated variant used by the source list route: tags plus a subfeed count
+// for the row-menu badge, each fetched with one batched query instead of N.
+export function listSourcesWithTags(database: DB = db): SourceListItem[] {
   const rows = listSources(database)
-  const tagsBySource = tagsForSources(
-    rows.map((s) => s.id),
-    database,
-  )
+  const sourceIds = rows.map((s) => s.id)
+  const tagsBySource = tagsForSources(sourceIds, database)
+  const subfeedCounts = subfeedCountsForSources(sourceIds, database)
   return rows.map((source) => ({
     ...source,
     tags: tagsBySource.get(source.id) ?? [],
+    subfeedCount: subfeedCounts.get(source.id) ?? 0,
   }))
 }
 

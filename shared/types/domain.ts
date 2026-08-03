@@ -32,11 +32,36 @@ export type SettingValue =
   | SettingValue[]
   | { [key: string]: SettingValue }
 
-/** Result of refreshing a source: how many items were seen/cached. */
-export interface RefreshSummary {
-  sourceId: number
+/**
+ * Anything the feed engine can turn into fetchable page URLs: a source, or a
+ * subfeed merged over its parent (`subfeedTarget` in `server/feed/target.ts`).
+ * Declared structurally rather than as `Pick<Source, ...>` so this
+ * hand-written, dependency-free file never has to import back from the
+ * Drizzle-inferred `Source` type it partly describes.
+ */
+export interface FeedTarget {
+  url: string
+  pagination?: PaginationConfig | null
+  queryParams?: QueryParams | null
+}
+
+/** How many items a refresh saw/cached, independent of what it refreshed. */
+export interface RefreshCounts {
   seen: number
   inserted: number
   updated: number
   pagesFetched: number
+}
+
+/** Result of refreshing a source. */
+export interface RefreshSummary extends RefreshCounts {
+  sourceId: number
+}
+
+/**
+ * Result of refreshing a subfeed. `sourceId` keeps its single meaning — the
+ * source items are cached under — which for a subfeed is the parent.
+ */
+export interface SubfeedRefreshSummary extends RefreshSummary {
+  subfeedId: number
 }

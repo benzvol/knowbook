@@ -2,14 +2,14 @@
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { SourceWithTags } from '#shared/types'
+import type { SourceListItem } from '#shared/types'
 
 const { fetchMock } = vi.hoisted(() => ({ fetchMock: vi.fn() }))
 mockNuxtImport('$fetch', () => fetchMock)
 
 const { default: SourcesIndexPage } = await import('~/pages/sources/index.vue')
 
-function makeSource(overrides: Partial<SourceWithTags> = {}): SourceWithTags {
+function makeSource(overrides: Partial<SourceListItem> = {}): SourceListItem {
   return {
     id: 1,
     url: 'https://example.com/feed',
@@ -20,6 +20,7 @@ function makeSource(overrides: Partial<SourceWithTags> = {}): SourceWithTags {
     createdAt: new Date(),
     updatedAt: new Date(),
     tags: [],
+    subfeedCount: 0,
     ...overrides,
   }
 }
@@ -94,7 +95,7 @@ describe('sources list page', () => {
     const rowsPerGroup = wrapper
       .findAllComponents({ name: 'UTable' })
       .map((table) =>
-        (table.props('data') as SourceWithTags[]).map((s) => s.title),
+        (table.props('data') as SourceListItem[]).map((s) => s.title),
       )
 
     expect(rowsPerGroup).toEqual([
@@ -103,6 +104,30 @@ describe('sources list page', () => {
       ['BBC News'], // world
       ['Lobsters'], // Untagged
     ])
+  })
+
+  it('shows a subfeed count in the row menu when present', async () => {
+    fetchMock.mockImplementation((url: string) => {
+      if (url === '/api/sources') {
+        return Promise.resolve([
+          makeSource({ id: 1, title: 'Hacker News', subfeedCount: 2 }),
+          makeSource({ id: 2, title: 'BBC News', subfeedCount: 0 }),
+        ])
+      }
+      return Promise.resolve([])
+    })
+    const wrapper = await mountSuspended(SourcesIndexPage)
+    await wrapper.vm.$nextTick()
+
+    // The dropdown's items are portalled and only rendered once opened, so
+    // assert on the `items` prop rather than the rendered text.
+    const menus = wrapper.findAllComponents({ name: 'UDropdownMenu' })
+    const labelsByMenu = menus.map((menu) =>
+      (menu.props('items') as { label: string }[]).map((i) => i.label),
+    )
+
+    expect(labelsByMenu[0]).toContain('Subfeeds (2)')
+    expect(labelsByMenu[1]).toContain('Subfeeds')
   })
 
   it('shows the no-sources-yet message distinct from no-matches', async () => {

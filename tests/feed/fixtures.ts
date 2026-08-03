@@ -1,4 +1,4 @@
-import type { Source } from '#shared/types'
+import type { Source, Subfeed } from '#shared/types'
 
 export function makeSource(overrides: Partial<Source> = {}): Source {
   return {
@@ -7,6 +7,18 @@ export function makeSource(overrides: Partial<Source> = {}): Source {
     title: 'Test source',
     managed: false,
     pagination: null,
+    queryParams: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+  }
+}
+
+export function makeSubfeed(overrides: Partial<Subfeed> = {}): Subfeed {
+  return {
+    id: 1,
+    sourceId: 1,
+    name: 'Test subfeed',
     queryParams: null,
     createdAt: new Date(),
     updatedAt: new Date(),

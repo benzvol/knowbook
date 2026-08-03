@@ -34,3 +34,17 @@ export class FeedParseError extends Error {
     this.name = 'FeedParseError'
   }
 }
+
+export class SourceNotFoundError extends Error {
+  constructor(readonly sourceId: number) {
+    super(`Source not found: ${sourceId}`)
+    this.name = 'SourceNotFoundError'
+  }
+}
+
+export class SubfeedNotFoundError extends Error {
+  constructor(readonly subfeedId: number) {
+    super(`Subfeed not found: ${subfeedId}`)
+    this.name = 'SubfeedNotFoundError'
+  }
+}

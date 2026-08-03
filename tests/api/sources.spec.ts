@@ -385,7 +385,8 @@ describe('POST /api/sources/:id/refresh', () => {
   })
 
   it('maps a not-found error to 404', async () => {
-    refreshSource.mockRejectedValue(new Error('Source not found: 999'))
+    const { SourceNotFoundError } = await import('~~/server/feed/errors')
+    refreshSource.mockRejectedValue(new SourceNotFoundError(999))
 
     const res = await handler(
       new Request('http://localhost/api/sources/999/refresh', {
