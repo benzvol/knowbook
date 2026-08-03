@@ -7,6 +7,7 @@
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
 import { db, DATABASE_PATH } from './client'
 import { createSource } from './repositories/sources'
+import { createSubfeed } from './repositories/subfeeds'
 import { attachTag, createTag } from './repositories/tags'
 
 // Ensure the schema exists even on a brand-new database file.
@@ -36,6 +37,28 @@ attachTag(bbcNews.id, world.id)
 createSource({
   url: 'https://lobste.rs/rss',
   title: 'Lobsters',
+})
+
+// A telex-style source: the paginated, JSON-filters case subfeeds exist for.
+// The column identity (`g7`) lives inside the JSON-encoded `filters` param,
+// not as the value of a plain param — the case the old `columnParam` model
+// couldn't express.
+const telex = createSource({
+  url: 'https://telex.hu/rss/archivum',
+  title: 'Telex archívum',
+  pagination: { pageParam: 'oldal', sizeParam: 'perPage', pageSize: 10 },
+})
+attachTag(telex.id, world.id)
+createSubfeed({
+  sourceId: telex.id,
+  name: 'g7',
+  queryParams: {
+    filters: JSON.stringify({
+      superTagSiteSlugs: ['g7'],
+      superTagSlugs: [null],
+      parentId: ['null'],
+    }),
+  },
 })
 
 console.info(`[db] seeded sample data (${DATABASE_PATH})`)

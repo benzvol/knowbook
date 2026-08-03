@@ -6,29 +6,6 @@ const pagination = defineModel<PaginationConfig | null | undefined>(
 )
 const queryParams = defineModel<QueryParams | null | undefined>('queryParams')
 
-const paramRows = ref<{ key: string; value: string }[]>(
-  Object.entries(queryParams.value ?? {}).map(([key, value]) => ({
-    key,
-    value,
-  })),
-)
-
-function syncQueryParams() {
-  const entries = paramRows.value
-    .map((row) => [row.key.trim(), row.value] as const)
-    .filter(([key]) => key.length > 0)
-  queryParams.value = entries.length ? Object.fromEntries(entries) : null
-}
-
-function addRow() {
-  paramRows.value.push({ key: '', value: '' })
-}
-
-function removeRow(index: number) {
-  paramRows.value.splice(index, 1)
-  syncQueryParams()
-}
-
 function updatePagination(patch: Partial<PaginationConfig>) {
   const next = { ...pagination.value, ...patch }
   const hasAnyValue = Object.values(next).some(
@@ -103,39 +80,7 @@ function updatePagination(patch: Partial<PaginationConfig>) {
           <p class="text-sm font-medium text-highlighted">
             Custom query params
           </p>
-          <div
-            v-for="(row, index) in paramRows"
-            :key="index"
-            class="flex items-center gap-2"
-          >
-            <UInput
-              v-model="row.key"
-              placeholder="key"
-              class="flex-1"
-              @update:model-value="syncQueryParams"
-            />
-            <UInput
-              v-model="row.value"
-              placeholder="value"
-              class="flex-1"
-              @update:model-value="syncQueryParams"
-            />
-            <UButton
-              icon="i-ph-trash"
-              color="error"
-              variant="ghost"
-              aria-label="Remove param"
-              @click="removeRow(index)"
-            />
-          </div>
-          <UButton
-            label="Add param"
-            icon="i-ph-plus"
-            color="neutral"
-            variant="subtle"
-            class="w-fit"
-            @click="addRow"
-          />
+          <QueryParamsEditor v-model="queryParams" />
         </div>
       </div>
     </template>

@@ -1,5 +1,10 @@
 import { defineStore } from 'pinia'
-import type { RefreshSummary, SourceWithTags, Tag } from '#shared/types'
+import type {
+  RefreshSummary,
+  SourceListItem,
+  SourceWithTags,
+  Tag,
+} from '#shared/types'
 import type {
   SourceCreateInput,
   SourceUpdateInput,
@@ -7,16 +12,16 @@ import type {
 
 export const useSourcesStore = defineStore('sources', {
   state: () => ({
-    sources: [] as SourceWithTags[],
+    sources: [] as SourceListItem[],
     loading: false,
     error: null as string | null,
   }),
   actions: {
-    async fetchAll(): Promise<SourceWithTags[]> {
+    async fetchAll(): Promise<SourceListItem[]> {
       this.loading = true
       this.error = null
       try {
-        this.sources = await $fetch<SourceWithTags[]>('/api/sources')
+        this.sources = await $fetch<SourceListItem[]>('/api/sources')
       } catch (cause) {
         this.error = errorMessage(cause)
       } finally {
@@ -63,7 +68,15 @@ export const useSourcesStore = defineStore('sources', {
           body: patch,
         })
         const index = this.sources.findIndex((s) => s.id === id)
-        if (index !== -1) this.sources[index] = updated
+        // The PATCH response has no `subfeedCount` (only the list route
+        // hydrates it), so carry the existing count forward rather than
+        // losing the badge on every edit.
+        if (index !== -1) {
+          this.sources[index] = {
+            ...updated,
+            subfeedCount: this.sources[index]!.subfeedCount,
+          }
+        }
         return updated
       } catch (cause) {
         this.error = errorMessage(cause)

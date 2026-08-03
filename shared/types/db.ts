@@ -22,6 +22,11 @@ export type NewSource = typeof sources.$inferInsert
 // A source hydrated with its tags, as returned by the list/get source routes.
 export type SourceWithTags = Source & { tags: Tag[] }
 
+// The source list additionally carries a subfeed count for the row-menu
+// badge. Kept separate from `SourceWithTags` because the create/patch routes
+// return that type without a count.
+export type SourceListItem = SourceWithTags & { subfeedCount: number }
+
 export type SourceTag = typeof sourceTags.$inferSelect
 export type NewSourceTag = typeof sourceTags.$inferInsert
 

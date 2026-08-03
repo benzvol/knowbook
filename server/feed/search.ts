@@ -1,4 +1,4 @@
-import type { Source } from '#shared/types'
+import type { FeedTarget } from '#shared/types'
 import { DEFAULT_MAX_PAGES, pages, type PagesOptions } from './pagination'
 import type { ParsedItem } from './parse'
 
@@ -10,17 +10,17 @@ export interface SearchUntilFoundResult {
 }
 
 export async function searchUntilFound(
-  source: Source,
+  target: FeedTarget,
   predicate: (item: ParsedItem) => boolean,
   opts: PagesOptions = {},
 ): Promise<SearchUntilFoundResult> {
-  const isPaginated = !!source.pagination?.pageParam
+  const isPaginated = !!target.pagination?.pageParam
   const maxPages = isPaginated ? (opts.maxPages ?? DEFAULT_MAX_PAGES) : 1
 
   const items: ParsedItem[] = []
   let pagesSearched = 0
 
-  for await (const page of pages(source, opts)) {
+  for await (const page of pages(target, opts)) {
     pagesSearched++
     items.push(...page)
 

@@ -2,14 +2,14 @@
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { SourceWithTags } from '#shared/types'
+import type { SourceListItem } from '#shared/types'
 
 const { fetchMock } = vi.hoisted(() => ({ fetchMock: vi.fn() }))
 mockNuxtImport('$fetch', () => fetchMock)
 
 const { useSourcesStore } = await import('~/stores/sources')
 
-function makeSource(overrides: Partial<SourceWithTags> = {}): SourceWithTags {
+function makeSource(overrides: Partial<SourceListItem> = {}): SourceListItem {
   return {
     id: 1,
     url: 'https://example.com/feed',
@@ -20,6 +20,7 @@ function makeSource(overrides: Partial<SourceWithTags> = {}): SourceWithTags {
     createdAt: new Date(),
     updatedAt: new Date(),
     tags: [],
+    subfeedCount: 0,
     ...overrides,
   }
 }
@@ -78,6 +79,29 @@ describe('useSourcesStore', () => {
 
     expect(result?.title).toBe('New')
     expect(store.sources[0]!.title).toBe('New')
+  })
+
+  it('update preserves subfeedCount, since the PATCH response has none', async () => {
+    const original = makeSource({ id: 3, title: 'Old', subfeedCount: 2 })
+    // The PATCH response mirrors SourceWithTags: no `subfeedCount` field.
+    const patchResponse: Omit<typeof original, 'subfeedCount'> = {
+      id: original.id,
+      url: original.url,
+      title: 'New',
+      managed: original.managed,
+      pagination: original.pagination,
+      queryParams: original.queryParams,
+      createdAt: original.createdAt,
+      updatedAt: original.updatedAt,
+      tags: original.tags,
+    }
+    fetchMock.mockResolvedValue(patchResponse)
+    const store = useSourcesStore()
+    store.sources = [original]
+
+    await store.update(3, { title: 'New' })
+
+    expect(store.sources[0]!.subfeedCount).toBe(2)
   })
 
   it('remove drops the source from state on success', async () => {
