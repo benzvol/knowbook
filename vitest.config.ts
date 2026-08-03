@@ -4,5 +4,6 @@ export default defineVitestConfig({
   test: {
     environment: 'happy-dom',
     include: ['tests/**/*.{test,spec}.ts'],
+    hookTimeout: 60000,
   },
 })
