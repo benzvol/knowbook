@@ -1,7 +1,11 @@
 // Imported directly from `../feed/errors` rather than the `../feed` barrel:
 // API specs mock the whole `~~/server/feed` module, which would make a
 // barrel-sourced check see `undefined` instead of these classes.
-import { SourceNotFoundError, SubfeedNotFoundError } from '../feed/errors'
+import {
+  FeedNotFoundError,
+  SourceNotFoundError,
+  SubfeedNotFoundError,
+} from '../feed/errors'
 
 // better-sqlite3 throws a `SqliteError` whose `.code` starts with
 // `SQLITE_CONSTRAINT` (e.g. `SQLITE_CONSTRAINT_UNIQUE`) and surfaces unwrapped
@@ -17,9 +21,10 @@ export function isUniqueViolation(cause: unknown): boolean {
 
 export function isNotFoundError(
   cause: unknown,
-): cause is SourceNotFoundError | SubfeedNotFoundError {
+): cause is SourceNotFoundError | SubfeedNotFoundError | FeedNotFoundError {
   return (
     cause instanceof SourceNotFoundError ||
-    cause instanceof SubfeedNotFoundError
+    cause instanceof SubfeedNotFoundError ||
+    cause instanceof FeedNotFoundError
   )
 }

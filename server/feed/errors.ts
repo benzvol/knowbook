@@ -48,3 +48,10 @@ export class SubfeedNotFoundError extends Error {
     this.name = 'SubfeedNotFoundError'
   }
 }
+
+export class FeedNotFoundError extends Error {
+  constructor(readonly feedId: number) {
+    super(`Feed not found: ${feedId}`)
+    this.name = 'FeedNotFoundError'
+  }
+}
