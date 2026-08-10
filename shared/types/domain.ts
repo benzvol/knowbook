@@ -65,3 +65,13 @@ export interface RefreshSummary extends RefreshCounts {
 export interface SubfeedRefreshSummary extends RefreshSummary {
   subfeedId: number
 }
+
+/**
+ * Result of refreshing every member of a feed. Counts are the aggregate
+ * across members; `members` keeps each member's own summary so the UI can
+ * report a partial failure per-member later.
+ */
+export interface FeedRefreshSummary extends RefreshCounts {
+  feedId: number
+  members: (RefreshSummary | SubfeedRefreshSummary)[]
+}
