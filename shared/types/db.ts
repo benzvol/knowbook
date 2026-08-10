@@ -39,6 +39,18 @@ export type NewFeed = typeof feeds.$inferInsert
 export type FeedSource = typeof feedSources.$inferSelect
 export type NewFeedSource = typeof feedSources.$inferInsert
 
+// The feed list additionally carries a member count for the row-menu badge.
+// Kept separate from `Feed` because the create/patch routes return that type
+// without a count.
+export type FeedListItem = Feed & { memberCount: number }
+
+// A feed membership hydrated with its source and (if narrowed) subfeed, as
+// returned by the feed detail route.
+export type FeedMemberDetail = FeedSource & {
+  source: Source
+  subfeed: Subfeed | null
+}
+
 export type Item = typeof items.$inferSelect
 export type NewItem = typeof items.$inferInsert
 
