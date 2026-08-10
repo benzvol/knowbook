@@ -6,6 +6,7 @@
  */
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
 import { db, DATABASE_PATH } from './client'
+import { addFeedSource, createFeed } from './repositories/feeds'
 import { createSource } from './repositories/sources'
 import { createSubfeed } from './repositories/subfeeds'
 import { attachTag, createTag } from './repositories/tags'
@@ -49,7 +50,7 @@ const telex = createSource({
   pagination: { pageParam: 'oldal', sizeParam: 'perPage', pageSize: 10 },
 })
 attachTag(telex.id, world.id)
-createSubfeed({
+const telexG7 = createSubfeed({
   sourceId: telex.id,
   name: 'g7',
   queryParams: {
@@ -60,5 +61,13 @@ createSubfeed({
     }),
   },
 })
+
+// A feed mixing a whole-source member with a subfeed-narrowed one (and a
+// second membership on that same source), so /feeds renders both member
+// shapes and exercises the collapse-to-distinct-sourceId case in dev.
+const morningRead = createFeed({ name: 'Morning read' })
+addFeedSource(morningRead.id, hackerNews.id, null)
+addFeedSource(morningRead.id, telex.id, telexG7.id)
+addFeedSource(morningRead.id, telex.id, null)
 
 console.info(`[db] seeded sample data (${DATABASE_PATH})`)
