@@ -9,6 +9,7 @@ import {
   createSource,
   createSubfeed,
   createTag,
+  deleteFeed,
   deleteSource,
 } from '~~/server/db/repositories'
 import { createTestDb } from './helpers'
@@ -67,6 +68,23 @@ describe('constraints', () => {
     expect(db.select().from(schema.tags).all()).toHaveLength(1)
   })
 
+  it('cascades delete from feed to its membership, leaving cached items intact', () => {
+    const s = createSource({ url: 'u', title: 'A' }, db)
+    const sf = createSubfeed({ sourceId: s.id, name: 'sub' }, db)
+    const feed = createFeed({ name: 'F' }, db)
+    createItem({ sourceId: s.id, guid: 'i1', title: 'i1' }, db)
+    addFeedSource(feed.id, s.id, null, db)
+    addFeedSource(feed.id, s.id, sf.id, db)
+
+    deleteFeed(feed.id, db)
+
+    expect(db.select().from(schema.feedSources).all()).toHaveLength(0)
+    // the source, its subfeed, and its cached items all survive
+    expect(db.select().from(schema.items).all()).toHaveLength(1)
+    expect(db.select().from(schema.sources).all()).toHaveLength(1)
+    expect(db.select().from(schema.subfeeds).all()).toHaveLength(1)
+  })
+
   it('keeps whole-source feed membership unique (partial index)', () => {
     const s = createSource({ url: 'u', title: 'A' }, db)
     const feed = createFeed({ name: 'F' }, db)
@@ -81,5 +99,4 @@ describe('constraints', () => {
     addFeedSource(feed.id, s.id, sf.id, db)
     expect(() => addFeedSource(feed.id, s.id, sf.id, db)).toThrow()
   })
-
 })
