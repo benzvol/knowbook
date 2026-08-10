@@ -1,12 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { DB } from '~~/server/db/client'
 import {
+  addFeedSource,
+  createFeed,
   createSource,
   createSubfeed,
   itemsForSource,
 } from '~~/server/db/repositories'
-import { SourceNotFoundError, SubfeedNotFoundError } from '~~/server/feed/errors'
-import { refreshSource, refreshSubfeed } from '~~/server/feed/refresh'
+import {
+  FeedNotFoundError,
+  SourceNotFoundError,
+  SubfeedNotFoundError,
+} from '~~/server/feed/errors'
+import {
+  refreshFeed,
+  refreshSource,
+  refreshSubfeed,
+} from '~~/server/feed/refresh'
 import { createTestDb } from '../db/helpers'
 import { RSS_FEED } from './fixtures'
 
@@ -126,5 +136,82 @@ describe('refreshSubfeed', () => {
         fetchImpl: fakeFetchImpl(RSS_FEED),
       }),
     ).rejects.toThrow(SubfeedNotFoundError)
+  })
+})
+
+describe('refreshFeed', () => {
+  it('aggregates counts across a mixed whole-source + subfeed membership set', async () => {
+    const a = createSource(
+      { url: 'https://a.example.com/feed', title: 'A' },
+      db,
+    )
+    const b = createSource(
+      { url: 'https://b.example.com/feed', title: 'B' },
+      db,
+    )
+    const sub = createSubfeed({ sourceId: a.id, name: 'sub' }, db)
+    const feed = createFeed({ name: 'F' }, db)
+    addFeedSource(feed.id, b.id, null, db)
+    addFeedSource(feed.id, a.id, sub.id, db)
+
+    const summary = await refreshFeed(feed.id, {
+      database: db,
+      fetchImpl: fakeFetchImpl(RSS_FEED),
+    })
+
+    expect(summary).toMatchObject({
+      feedId: feed.id,
+      seen: 4,
+      inserted: 4,
+      updated: 0,
+      pagesFetched: 2,
+    })
+    expect(summary.members).toHaveLength(2)
+    expect(summary.members).toContainEqual(
+      expect.objectContaining({ sourceId: b.id }),
+    )
+    expect(summary.members).toContainEqual(
+      expect.objectContaining({ sourceId: a.id, subfeedId: sub.id }),
+    )
+  })
+
+  it('updates instead of duplicating when two members share a source', async () => {
+    const s = createSource({ url: 'https://example.com/feed', title: 'A' }, db)
+    const sub = createSubfeed({ sourceId: s.id, name: 'sub' }, db)
+    const feed = createFeed({ name: 'F' }, db)
+    addFeedSource(feed.id, s.id, null, db)
+    addFeedSource(feed.id, s.id, sub.id, db)
+
+    const summary = await refreshFeed(feed.id, {
+      database: db,
+      fetchImpl: fakeFetchImpl(RSS_FEED),
+    })
+
+    expect(summary).toMatchObject({ seen: 4, inserted: 2, updated: 2 })
+    expect(itemsForSource(s.id, db)).toHaveLength(2)
+  })
+
+  it('returns zero counts and no members for a memberless feed', async () => {
+    const feed = createFeed({ name: 'F' }, db)
+
+    const summary = await refreshFeed(feed.id, {
+      database: db,
+      fetchImpl: fakeFetchImpl(RSS_FEED),
+    })
+
+    expect(summary).toMatchObject({
+      feedId: feed.id,
+      members: [],
+      seen: 0,
+      inserted: 0,
+      updated: 0,
+      pagesFetched: 0,
+    })
+  })
+
+  it('throws FeedNotFoundError when the feed does not exist', async () => {
+    await expect(
+      refreshFeed(999, { database: db, fetchImpl: fakeFetchImpl(RSS_FEED) }),
+    ).rejects.toThrow(FeedNotFoundError)
   })
 })

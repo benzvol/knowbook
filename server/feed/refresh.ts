@@ -1,4 +1,5 @@
 import type {
+  FeedRefreshSummary,
   FeedTarget,
   NewItem,
   RefreshCounts,
@@ -7,16 +8,26 @@ import type {
 } from '#shared/types'
 import { db, type DB } from '../db/client'
 import {
+  feedMembers,
+  getFeed,
   getItemBySourceGuid,
   getSource,
   getSubfeed,
   upsertItem,
 } from '../db/repositories'
-import { SourceNotFoundError, SubfeedNotFoundError } from './errors'
+import {
+  FeedNotFoundError,
+  SourceNotFoundError,
+  SubfeedNotFoundError,
+} from './errors'
 import { pages, type PagesOptions } from './pagination'
 import { subfeedTarget } from './target'
 
-export type { RefreshSummary, SubfeedRefreshSummary } from '#shared/types'
+export type {
+  FeedRefreshSummary,
+  RefreshSummary,
+  SubfeedRefreshSummary,
+} from '#shared/types'
 
 export interface RefreshOptions extends PagesOptions {
   database?: DB
@@ -91,4 +102,46 @@ export async function refreshSubfeed(
   const target = subfeedTarget(source, subfeed)
   const counts = await refreshTarget(target, source.id, database, opts)
   return { subfeedId, sourceId: source.id, ...counts }
+}
+
+export async function refreshFeed(
+  feedId: number,
+  opts: RefreshOptions = {},
+): Promise<FeedRefreshSummary> {
+  const database = opts.database ?? db
+  if (!getFeed(feedId, database)) {
+    throw new FeedNotFoundError(feedId)
+  }
+
+  const summary: FeedRefreshSummary = {
+    feedId,
+    members: [],
+    seen: 0,
+    inserted: 0,
+    updated: 0,
+    pagesFetched: 0,
+  }
+
+  // Sequential, not `Promise.all`: members frequently share a source, and
+  // concurrent upserts to the same (sourceId, guid) row would race on the
+  // one shared SQLite connection. Each member goes through the exact same
+  // `refreshSource`/`refreshSubfeed` path as refreshing it stand-alone,
+  // forwarding `opts` whole — both callees resolve `opts.database` (and any
+  // injected `fetchImpl`) themselves. A member's rejection propagates
+  // immediately (fail-fast) rather than being collected: `members` exists so
+  // a later issue can report a partial failure per-member, not to make that
+  // reporting possible today.
+  for (const member of feedMembers(feedId, database)) {
+    const result = member.subfeedId
+      ? await refreshSubfeed(member.subfeedId, opts)
+      : await refreshSource(member.sourceId, opts)
+
+    summary.members.push(result)
+    summary.seen += result.seen
+    summary.inserted += result.inserted
+    summary.updated += result.updated
+    summary.pagesFetched += result.pagesFetched
+  }
+
+  return summary
 }
