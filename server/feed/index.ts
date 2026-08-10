@@ -1,3 +1,4 @@
+export * from './compose'
 export * from './errors'
 export * from './fetch'
 export * from './pagination'
