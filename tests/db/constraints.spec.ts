@@ -10,7 +10,10 @@ import {
   createSubfeed,
   createTag,
   deleteFeed,
+  deleteItem,
   deleteSource,
+  deleteSubfeed,
+  linkItemSubfeed,
 } from '~~/server/db/repositories'
 import { createTestDb } from './helpers'
 
@@ -98,5 +101,28 @@ describe('constraints', () => {
     const feed = createFeed({ name: 'F' }, db)
     addFeedSource(feed.id, s.id, sf.id, db)
     expect(() => addFeedSource(feed.id, s.id, sf.id, db)).toThrow()
+  })
+
+  it('cascades item deletion to item_subfeeds', () => {
+    const s = createSource({ url: 'u', title: 'A' }, db)
+    const sf = createSubfeed({ sourceId: s.id, name: 'sub' }, db)
+    const item = createItem({ sourceId: s.id, guid: 'i1', title: 'i1' }, db)
+    linkItemSubfeed(item.id, sf.id, db)
+
+    deleteItem(item.id, db)
+
+    expect(db.select().from(schema.itemSubfeeds).all()).toHaveLength(0)
+  })
+
+  it('cascades subfeed deletion to item_subfeeds, leaving the item intact', () => {
+    const s = createSource({ url: 'u', title: 'A' }, db)
+    const sf = createSubfeed({ sourceId: s.id, name: 'sub' }, db)
+    const item = createItem({ sourceId: s.id, guid: 'i1', title: 'i1' }, db)
+    linkItemSubfeed(item.id, sf.id, db)
+
+    deleteSubfeed(sf.id, db)
+
+    expect(db.select().from(schema.itemSubfeeds).all()).toHaveLength(0)
+    expect(db.select().from(schema.items).all()).toHaveLength(1)
   })
 })

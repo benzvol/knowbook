@@ -6,6 +6,7 @@ import {
   createSource,
   createSubfeed,
   itemsForSource,
+  itemsForSubfeed,
 } from '~~/server/db/repositories'
 import {
   FeedNotFoundError,
@@ -127,6 +128,40 @@ describe('refreshSubfeed', () => {
 
     expect(second).toMatchObject({ seen: 2, inserted: 0, updated: 2 })
     expect(itemsForSource(source.id, db)).toHaveLength(2)
+  })
+
+  it('links each upserted item to the subfeed, without duplicating on re-run', async () => {
+    const source = createSource(
+      { url: 'https://example.com/feed', title: 'Test' },
+      db,
+    )
+    const subfeed = createSubfeed({ sourceId: source.id, name: 'sub' }, db)
+
+    await refreshSubfeed(subfeed.id, {
+      database: db,
+      fetchImpl: fakeFetchImpl(RSS_FEED),
+    })
+    await refreshSubfeed(subfeed.id, {
+      database: db,
+      fetchImpl: fakeFetchImpl(RSS_FEED),
+    })
+
+    expect(itemsForSubfeed(subfeed.id, db)).toHaveLength(2)
+  })
+
+  it('does not link items refreshed directly through the parent source', async () => {
+    const source = createSource(
+      { url: 'https://example.com/feed', title: 'Test' },
+      db,
+    )
+    const subfeed = createSubfeed({ sourceId: source.id, name: 'sub' }, db)
+
+    await refreshSource(source.id, {
+      database: db,
+      fetchImpl: fakeFetchImpl(RSS_FEED),
+    })
+
+    expect(itemsForSubfeed(subfeed.id, db)).toHaveLength(0)
   })
 
   it('throws SubfeedNotFoundError when the subfeed does not exist', async () => {

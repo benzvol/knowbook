@@ -127,6 +127,24 @@ export const items = sqliteTable(
   (t) => [uniqueIndex('items_source_guid_unique').on(t.sourceId, t.guid)],
 )
 
+// Records that a cached item was also seen through a given subfeed of its
+// source. Items still cache under the parent `sourceId`
+// (`items_source_guid_unique` above is unchanged) — this table only adds the
+// extra fact "this row was also seen through subfeed X", so an item can
+// belong to several sibling subfeeds at once.
+export const itemSubfeeds = sqliteTable(
+  'item_subfeeds',
+  {
+    itemId: integer('item_id')
+      .notNull()
+      .references(() => items.id, { onDelete: 'cascade' }),
+    subfeedId: integer('subfeed_id')
+      .notNull()
+      .references(() => subfeeds.id, { onDelete: 'cascade' }),
+  },
+  (t) => [primaryKey({ columns: [t.itemId, t.subfeedId] })],
+)
+
 export const bookmarks = sqliteTable('bookmarks', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   itemId: integer('item_id')
