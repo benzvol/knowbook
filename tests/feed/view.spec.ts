@@ -61,11 +61,7 @@ describe('applyItemView', () => {
         makeItem({ id: 2, tags: ['a', 'b'] }),
         makeItem({ id: 3, tags: ['b'] }),
       ]
-      const result = applyItemView(
-        items,
-        baseQuery({ tags: ['a', 'b'] }),
-        25,
-      )
+      const result = applyItemView(items, baseQuery({ tags: ['a', 'b'] }), 25)
       expect(result.items.map((i) => i.id)).toEqual([2])
     })
   })

@@ -25,13 +25,15 @@ function byFetchedAtDesc(a: Item, b: Item): number {
   return b.fetchedAt.getTime() - a.fetchedAt.getTime()
 }
 
-const comparators: Record<ItemQueryInput['sort'], (a: Item, b: Item) => number> =
-  {
-    newest: byPublishedAtDesc,
-    oldest: byPublishedAtAsc,
-    title: byTitle,
-    fetched: byFetchedAtDesc,
-  }
+const comparators: Record<
+  ItemQueryInput['sort'],
+  (a: Item, b: Item) => number
+> = {
+  newest: byPublishedAtDesc,
+  oldest: byPublishedAtAsc,
+  title: byTitle,
+  fetched: byFetchedAtDesc,
+}
 
 /**
  * The title/description match both the view layer's `q` filter and
