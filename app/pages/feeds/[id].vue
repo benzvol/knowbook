@@ -152,9 +152,6 @@ async function onRefresh() {
               <p class="text-sm text-muted break-all">
                 {{ member.source.url }}
               </p>
-              <UBadge v-if="member.subfeed" size="sm" variant="subtle">
-                shows the whole source's items
-              </UBadge>
             </div>
             <UButton
               icon="i-ph-trash"
@@ -172,20 +169,6 @@ async function onRefresh() {
           start reading it here.
         </p>
       </UCard>
-
-      <UAlert
-        v-if="members.some((m) => m.subfeed)"
-        color="info"
-        variant="subtle"
-        icon="i-ph-info"
-        title="Subfeed members show their parent source's items"
-      >
-        <template #description>
-          Cached items are stored per source, so a member narrowed to a subfeed
-          currently surfaces that source's full cached set. Narrowing the cached
-          view to just that subfeed comes later.
-        </template>
-      </UAlert>
 
       <div class="flex flex-col gap-2">
         <h2 class="font-medium text-highlighted">Items</h2>
