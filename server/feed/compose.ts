@@ -7,21 +7,10 @@ import {
   itemsForSubfeed,
 } from '../db/repositories'
 import { FeedNotFoundError } from './errors'
+import { byPublishedAtDesc } from './view'
 
 export interface FeedItemsOptions {
   database?: DB
-}
-
-// DESC by publishedAt, with undated items last. Each member's own read already
-// orders its rows; this re-sorts across the concatenated sets. `-Infinity` on
-// both sides makes undated items compare equal to each other and sort after
-// every dated item, without the `NaN` a raw subtraction on `null` would
-// produce.
-function byPublishedAtDesc(a: Item, b: Item): number {
-  return (
-    (b.publishedAt?.getTime() ?? -Infinity) -
-    (a.publishedAt?.getTime() ?? -Infinity)
-  )
 }
 
 /**
