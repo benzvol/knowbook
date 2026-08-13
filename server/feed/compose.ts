@@ -1,17 +1,22 @@
 import type { Item } from '#shared/types'
 import { db, type DB } from '../db/client'
-import { feedMembers, getFeed, itemsForSource } from '../db/repositories'
+import {
+  feedMembers,
+  getFeed,
+  itemsForSource,
+  itemsForSubfeed,
+} from '../db/repositories'
 import { FeedNotFoundError } from './errors'
 
 export interface FeedItemsOptions {
   database?: DB
 }
 
-// DESC by publishedAt, with undated items last. `itemsForSource` already
-// orders each source's own rows; this re-sorts across the concatenated sets.
-// `-Infinity` on both sides makes undated items compare equal to each other
-// and sort after every dated item, without the `NaN` a raw subtraction on
-// `null` would produce.
+// DESC by publishedAt, with undated items last. Each member's own read already
+// orders its rows; this re-sorts across the concatenated sets. `-Infinity` on
+// both sides makes undated items compare equal to each other and sort after
+// every dated item, without the `NaN` a raw subtraction on `null` would
+// produce.
 function byPublishedAtDesc(a: Item, b: Item): number {
   return (
     (b.publishedAt?.getTime() ?? -Infinity) -
@@ -25,12 +30,13 @@ function byPublishedAtDesc(a: Item, b: Item): number {
  * network fetch; freshness comes from each member's own refresh, or the
  * aggregate `refreshFeed`.
  *
- * Members collapse to their distinct `sourceId`s before reading: cached
- * items carry only `sourceId` (issue 05 deliberately didn't persist which
- * subfeed an item arrived through), so a whole-source membership and a
- * subfeed-of-that-source membership resolve to the same items. Reading each
- * source once is therefore also the de-dup pass — `items_source_guid_unique`
- * already guarantees one row per (sourceId, guid).
+ * Each member is resolved individually — `itemsForSubfeed` when narrowed to a
+ * subfeed, `itemsForSource` for a whole-source membership — rather than
+ * collapsing to distinct `sourceId`s: a subfeed member now only contributes
+ * the items linked to it (`item_subfeeds`), which can be a strict subset of
+ * its source's full cache. A whole-source membership and a
+ * subfeed-of-that-source membership can therefore legitimately overlap, so
+ * the merge de-dupes by item id rather than relying on one read per source.
  */
 export function feedItems(feedId: number, opts: FeedItemsOptions = {}): Item[] {
   const database = opts.database ?? db
@@ -38,11 +44,13 @@ export function feedItems(feedId: number, opts: FeedItemsOptions = {}): Item[] {
     throw new FeedNotFoundError(feedId)
   }
 
-  const sourceIds = new Set(
-    feedMembers(feedId, database).map((member) => member.sourceId),
-  )
+  const byId = new Map<number, Item>()
+  for (const member of feedMembers(feedId, database)) {
+    const memberItems = member.subfeedId
+      ? itemsForSubfeed(member.subfeedId, database)
+      : itemsForSource(member.sourceId, database)
+    for (const item of memberItems) byId.set(item.id, item)
+  }
 
-  return [...sourceIds]
-    .flatMap((sourceId) => itemsForSource(sourceId, database))
-    .sort(byPublishedAtDesc)
+  return [...byId.values()].sort(byPublishedAtDesc)
 }
