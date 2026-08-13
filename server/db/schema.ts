@@ -120,6 +120,10 @@ export const items = sqliteTable(
     link: text('link'),
     publishedAt: integer('published_at', { mode: 'timestamp_ms' }),
     tags: text('tags', { mode: 'json' }).$type<ItemTags>(),
+    // Extracted from one of several competing feed conventions (media RSS,
+    // enclosures, itunes:image, …) — see server/feed/parse.ts. Absolute
+    // http(s) only; hotlinked from the origin, never proxied.
+    imageUrl: text('image_url'),
     fetchedAt: integer('fetched_at', { mode: 'timestamp_ms' })
       .notNull()
       .$defaultFn(() => new Date()),

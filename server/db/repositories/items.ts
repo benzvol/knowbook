@@ -63,6 +63,10 @@ export function upsertItem(data: NewItem, database: DB = db): Item {
         link: data.link,
         publishedAt: data.publishedAt,
         tags: data.tags,
+        // Listed explicitly like every other column here, so an
+        // already-cached row backfills its image on the very next refresh
+        // rather than staying imageUrl: null forever.
+        imageUrl: data.imageUrl,
         fetchedAt: new Date(),
       },
     })
@@ -83,10 +87,12 @@ export function linkItemSubfeed(
   subfeedId: number,
   database: DB = db,
 ): ItemSubfeed {
-  return database
-    .insert(itemSubfeeds)
-    .values({ itemId, subfeedId })
-    .onConflictDoNothing()
-    .returning()
-    .get() ?? { itemId, subfeedId }
+  return (
+    database
+      .insert(itemSubfeeds)
+      .values({ itemId, subfeedId })
+      .onConflictDoNothing()
+      .returning()
+      .get() ?? { itemId, subfeedId }
+  )
 }
