@@ -75,3 +75,19 @@ export interface FeedRefreshSummary extends RefreshCounts {
   feedId: number
   members: (RefreshSummary | SubfeedRefreshSummary)[]
 }
+
+/** One page of a filtered/sorted item view (`server/feed/view.ts`). */
+export interface ItemPage<T> {
+  items: T[]
+  /** Matches before paging. */
+  total: number
+  page: number
+  pageSize: number
+  pageCount: number
+}
+
+/** Distinct values present in the *unfiltered* set, for the toolbar's selects. */
+export interface ItemFacets {
+  tags: string[]
+  sources: { id: number; title: string }[]
+}
