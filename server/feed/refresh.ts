@@ -22,6 +22,7 @@ import {
   SubfeedNotFoundError,
 } from './errors'
 import { pages, type PagesOptions } from './pagination'
+import type { ParsedItem } from './parse'
 import { subfeedTarget } from './target'
 
 export type {
@@ -38,25 +39,38 @@ export interface RefreshOptions extends PagesOptions {
 // that referred to it before subfeed refresh existed.
 export type RefreshSourceOptions = RefreshOptions
 
+export interface RefreshTargetExtra {
+  subfeedId?: number
+  /**
+   * When supplied, `refreshTarget` stops after the first page containing a
+   * match and reports `matched: true` — the seam `searchAndCache`
+   * (`server/feed/search.ts`) hangs off, so cached-miss search and a plain
+   * refresh share one fetch/parse/upsert loop rather than two.
+   */
+  until?: (item: ParsedItem) => boolean
+}
+
 // Shared fetch/parse/upsert loop, over any FeedTarget. Items always cache
 // under `sourceId` — for a subfeed that's the parent's id — so the existing
 // `(sourceId, guid)` unique index keeps a single row per entry regardless of
 // which target it arrived through. When `subfeedId` is given (i.e. this
 // target is a subfeed), each upserted row is additionally linked via
 // `item_subfeeds`, so the subfeed's own view can narrow to just its items.
-async function refreshTarget(
+export async function refreshTarget(
   target: FeedTarget,
   sourceId: number,
   database: DB,
   opts: PagesOptions,
-  subfeedId?: number,
-): Promise<RefreshCounts> {
+  extra: RefreshTargetExtra = {},
+): Promise<RefreshCounts & { matched: boolean }> {
+  const { subfeedId, until } = extra
   const counts: RefreshCounts = {
     seen: 0,
     inserted: 0,
     updated: 0,
     pagesFetched: 0,
   }
+  let matched = false
 
   for await (const page of pages(target, opts)) {
     counts.pagesFetched++
@@ -69,10 +83,13 @@ async function refreshTarget(
       if (subfeedId != null) linkItemSubfeed(row.id, subfeedId, database)
       if (existing) counts.updated++
       else counts.inserted++
+      if (until?.(parsed)) matched = true
     }
+
+    if (matched) break
   }
 
-  return counts
+  return { ...counts, matched }
 }
 
 export async function refreshSource(
@@ -85,7 +102,12 @@ export async function refreshSource(
     throw new SourceNotFoundError(sourceId)
   }
 
-  const counts = await refreshTarget(source, sourceId, database, opts)
+  const { matched: _matched, ...counts } = await refreshTarget(
+    source,
+    sourceId,
+    database,
+    opts,
+  )
   return { sourceId, ...counts }
 }
 
@@ -105,12 +127,12 @@ export async function refreshSubfeed(
   }
 
   const target = subfeedTarget(source, subfeed)
-  const counts = await refreshTarget(
+  const { matched: _matched, ...counts } = await refreshTarget(
     target,
     source.id,
     database,
     opts,
-    subfeedId,
+    { subfeedId },
   )
   return { subfeedId, sourceId: source.id, ...counts }
 }
