@@ -1,0 +1,122 @@
+import { itemQuerySchema, type ItemQueryInput } from '#shared/schemas/itemQuery'
+import type { ItemViewRef, SearchMeta } from '~/stores/items'
+
+export const ITEM_VIEW_MODES = ['list', 'grid', 'editorial'] as const
+export type ItemViewMode = (typeof ITEM_VIEW_MODES)[number]
+
+function isViewMode(value: unknown): value is ItemViewMode {
+  return (
+    typeof value === 'string' &&
+    (ITEM_VIEW_MODES as readonly string[]).includes(value)
+  )
+}
+
+// Reuses the server's own coercion/defaults (repeated-or-comma-separated
+// tags, string->number, sort enum, …) rather than re-implementing the query
+// contract client-side. `safeParse` because a hand-edited/stale URL must
+// fall back to defaults, not crash the page.
+function parseQuery(query: Record<string, unknown>): ItemQueryInput {
+  const parsed = itemQuerySchema.safeParse(query)
+  return parsed.success
+    ? parsed.data
+    : { tags: [], sourceIds: [], sort: 'newest', page: 1 }
+}
+
+/**
+ * Owns the reactive item-view query and layout mode for one target (a
+ * source, a subfeed, or a feed), syncs both to the page's URL query, and
+ * drives `useItemsStore`. Shared unchanged by every items page — a filter or
+ * sort emitted from `ItemViewToolbar` calls `patch`, a pager click calls
+ * `setPage`, and the mode switch calls `setMode`.
+ *
+ * Does **not** fetch on its own: the caller wraps `reload()` in its own
+ * `useAsyncData`, matching every other page in the app
+ * (`app/pages/feeds/[id].vue`), so the initial load is awaited during SSR
+ * instead of racing hydration.
+ */
+export function useItemView(target: ItemViewRef) {
+  const route = useRoute()
+  const router = useRouter()
+  const store = useItemsStore()
+
+  const initial = parseQuery(route.query)
+  const state = reactive<ItemQueryInput>(initial)
+  const mode = ref<ItemViewMode>(
+    isViewMode(route.query.mode) ? route.query.mode : 'list',
+  )
+
+  const query = computed<ItemQueryInput>(() => ({ ...state }))
+  const key = `${target.kind}:${target.id}`
+  const view = computed(() => store.views[key])
+  const searchMeta = computed<SearchMeta | undefined>(
+    () => store.lastSearch[key],
+  )
+  const loading = computed(() => store.loading)
+  const error = computed(() => store.error)
+
+  // The mode switch is deliberately not part of `itemQuerySchema` — it's
+  // client-only presentation and never sent to the API — but it still lives
+  // in the URL so a grid view survives a reload.
+  function syncUrl() {
+    const next: Record<string, string | string[]> = {}
+    if (state.q) next.q = state.q
+    if (state.tags.length) next.tags = state.tags
+    if (state.sourceIds.length) next.sourceIds = state.sourceIds.map(String)
+    if (state.sort !== 'newest') next.sort = state.sort
+    if (state.page !== 1) next.page = String(state.page)
+    if (state.pageSize) next.pageSize = String(state.pageSize)
+    if (mode.value !== 'list') next.mode = mode.value
+    router.replace({ query: next })
+  }
+
+  // Returns the fetched page rather than void: `useAsyncData(key, () =>
+  // reload())` needs a non-`undefined` result to cache in the Nuxt payload,
+  // or it can't tell "not yet fetched" from "fetched, got nothing" and
+  // refetches on the client — racing hydration against the view's own
+  // Pinia-store-backed render.
+  async function load() {
+    return store.fetchItems(target, query.value)
+  }
+
+  /**
+   * Apply a filter/sort/search/page-size change. Always resets to page 1 —
+   * the previous page's contents are no longer meaningful once the result
+   * set has changed underneath it.
+   */
+  async function patch(partial: Partial<Omit<ItemQueryInput, 'page'>>) {
+    Object.assign(state, partial, { page: 1 })
+    syncUrl()
+    await load()
+  }
+
+  async function setPage(page: number) {
+    state.page = page
+    syncUrl()
+    await load()
+  }
+
+  // Purely presentational: no refetch, no page reset.
+  function setMode(next: ItemViewMode) {
+    mode.value = next
+    syncUrl()
+  }
+
+  async function searchDeep(): Promise<SearchMeta | undefined> {
+    if (!state.q) return undefined
+    return store.searchDeep(target, { ...query.value, q: state.q })
+  }
+
+  return {
+    query,
+    mode,
+    view,
+    searchMeta,
+    loading,
+    error,
+    patch,
+    setPage,
+    setMode,
+    searchDeep,
+    reload: load,
+  }
+}

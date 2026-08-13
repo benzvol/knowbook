@@ -13,21 +13,34 @@ const toast = useToast()
 const { data: feed } = await useAsyncData(`feed-${id}`, () =>
   store.fetchOne(id),
 )
-const { data: items, refresh: reloadItems } = await useAsyncData(
-  `feed-items-${id}`,
-  () => store.fetchItems(id),
-)
+
+const {
+  query,
+  mode,
+  view,
+  searchMeta,
+  loading,
+  error: itemsError,
+  patch,
+  setPage,
+  setMode,
+  searchDeep,
+  reload: reloadItems,
+} = useItemView({ kind: 'feed', id })
+
+await useAsyncData(`feed-items-${id}`, () => reloadItems())
 
 const members = computed(() => store.membersByFeed[id] ?? [])
 const noMembersYet = computed(() => members.value.length === 0)
-const noItemsYet = computed(() => (items.value ?? []).length === 0)
 
-const sourceTitleById = computed(() => {
-  const map = new Map<number, string>()
-  for (const member of members.value)
-    map.set(member.source.id, member.source.title)
-  return map
-})
+const sourceTitles = computed(
+  () => new Map(view.value?.facets.sources.map((s) => [s.id, s.title]) ?? []),
+)
+
+// A composed feed has no pagination config of its own — search-until-found
+// walks each member's own target, so the button is always offered here; a
+// member with no pagination degenerates to a single (harmless) extra page.
+const paginated = true
 
 function memberLabel(member: FeedMemberDetail): string {
   return member.subfeed
@@ -172,37 +185,35 @@ async function onRefresh() {
 
       <div class="flex flex-col gap-2">
         <h2 class="font-medium text-highlighted">Items</h2>
-        <div v-if="items && items.length" class="flex flex-col gap-2">
-          <UCard v-for="item in items" :key="item.id">
-            <div class="flex items-start justify-between gap-4">
-              <div class="flex flex-col gap-1">
-                <a
-                  v-if="item.link"
-                  :href="item.link"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="font-medium text-highlighted underline"
-                >
-                  {{ item.title }}
-                </a>
-                <span v-else class="font-medium text-highlighted">
-                  {{ item.title }}
-                </span>
-                <p class="text-sm text-muted">
-                  {{ sourceTitleById.get(item.sourceId) }}
-                  <template v-if="item.publishedAt">
-                    · {{ new Date(item.publishedAt).toLocaleString() }}
-                  </template>
-                </p>
-              </div>
-            </div>
-          </UCard>
-        </div>
-        <UCard v-else-if="noItemsYet">
-          <p class="text-muted">
-            No cached items yet. Refresh the feed to fetch its members.
-          </p>
-        </UCard>
+
+        <ItemsItemViewToolbar
+          v-if="view"
+          :facets="view.facets"
+          :query="query"
+          :mode="mode"
+          @patch="patch"
+          @update:mode="setMode"
+        />
+
+        <ItemsItemList
+          :items="view?.items ?? []"
+          :mode="mode"
+          :source-titles="sourceTitles"
+          :loading="loading"
+          :error="itemsError"
+        />
+
+        <ItemsItemPager
+          v-if="view"
+          :total="view.total"
+          :page="view.page"
+          :page-size="view.pageSize"
+          :has-query="!!query.q"
+          :paginated="paginated"
+          :search-meta="searchMeta"
+          @update:page="setPage"
+          @search-deep="searchDeep"
+        />
       </div>
 
       <UModal v-model:open="addModalOpen" title="Add member">

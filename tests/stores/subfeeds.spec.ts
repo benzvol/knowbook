@@ -27,6 +27,28 @@ beforeEach(() => {
 })
 
 describe('useSubfeedsStore', () => {
+  it('fetchOne returns the subfeed on success', async () => {
+    const subfeed = makeSubfeed({ id: 7 })
+    fetchMock.mockResolvedValue(subfeed)
+    const store = useSubfeedsStore()
+
+    const result = await store.fetchOne(7)
+
+    expect(result).toEqual(subfeed)
+    expect(store.error).toBeNull()
+  })
+
+  it('fetchOne sets error and errorStatus on failure', async () => {
+    fetchMock.mockRejectedValue({ statusMessage: 'Not found', statusCode: 404 })
+    const store = useSubfeedsStore()
+
+    const result = await store.fetchOne(999)
+
+    expect(result).toBeUndefined()
+    expect(store.error).toBe('Not found')
+    expect(store.errorStatus).toBe(404)
+  })
+
   it('fetchForSource populates the per-source map on success', async () => {
     fetchMock.mockResolvedValue([makeSubfeed()])
     const store = useSubfeedsStore()
