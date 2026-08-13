@@ -146,6 +146,11 @@ const columns: TableColumn<SourceListItem>[] = [
               to: `/sources/${row.original.id}/edit`,
             },
             {
+              label: 'Items',
+              icon: 'i-ph-newspaper',
+              to: `/sources/${row.original.id}/items`,
+            },
+            {
               label: row.original.subfeedCount
                 ? `Subfeeds (${row.original.subfeedCount})`
                 : 'Subfeeds',

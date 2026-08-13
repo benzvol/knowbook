@@ -238,13 +238,4 @@ describe('useFeedsStore', () => {
 
     expect(result).toEqual(summary)
   })
-
-  it('fetchItems returns the merged item list without touching state', async () => {
-    fetchMock.mockResolvedValue([{ id: 1 }, { id: 2 }])
-    const store = useFeedsStore()
-
-    const result = await store.fetchItems(1)
-
-    expect(result).toHaveLength(2)
-  })
 })

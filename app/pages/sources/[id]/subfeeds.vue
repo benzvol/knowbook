@@ -152,9 +152,7 @@ function isOverride(key: string, queryParams: Record<string, string> | null) {
               <h2 class="font-medium text-highlighted">{{ subfeed.name }}</h2>
               <ul class="flex flex-col gap-1 text-sm">
                 <li
-                  v-for="[key, value] in effectiveEntries(
-                    subfeed.queryParams,
-                  )"
+                  v-for="[key, value] in effectiveEntries(subfeed.queryParams)"
                   :key="key"
                   class="flex flex-col gap-0.5"
                 >
@@ -175,6 +173,13 @@ function isOverride(key: string, queryParams: Record<string, string> | null) {
               </ul>
             </div>
             <div class="flex gap-2">
+              <UButton
+                icon="i-ph-newspaper"
+                color="neutral"
+                variant="ghost"
+                aria-label="View items"
+                :to="`/subfeeds/${subfeed.id}`"
+              />
               <UButton
                 icon="i-ph-arrow-clockwise"
                 color="neutral"

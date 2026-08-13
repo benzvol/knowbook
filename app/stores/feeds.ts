@@ -4,7 +4,6 @@ import type {
   FeedListItem,
   FeedMemberDetail,
   FeedRefreshSummary,
-  Item,
 } from '#shared/types'
 import type {
   FeedCreateInput,
@@ -172,18 +171,6 @@ export const useFeedsStore = defineStore('feeds', {
         this.error = errorMessage(cause)
         this.errorStatus = errorStatus(cause)
         return undefined
-      }
-    },
-
-    async fetchItems(feedId: number): Promise<Item[]> {
-      this.error = null
-      this.errorStatus = null
-      try {
-        return await $fetch<Item[]>(`/api/feeds/${feedId}/items`)
-      } catch (cause) {
-        this.error = errorMessage(cause)
-        this.errorStatus = errorStatus(cause)
-        return []
       }
     },
   },

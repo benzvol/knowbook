@@ -13,6 +13,18 @@ export const useSubfeedsStore = defineStore('subfeeds', {
     errorStatus: null as number | null,
   }),
   actions: {
+    async fetchOne(id: number): Promise<Subfeed | undefined> {
+      this.error = null
+      this.errorStatus = null
+      try {
+        return await $fetch<Subfeed>(`/api/subfeeds/${id}`)
+      } catch (cause) {
+        this.error = errorMessage(cause)
+        this.errorStatus = errorStatus(cause)
+        return undefined
+      }
+    },
+
     async fetchForSource(sourceId: number): Promise<Subfeed[]> {
       this.loading = true
       this.error = null
