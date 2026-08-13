@@ -18,7 +18,6 @@ vi.mock('~~/server/db/repositories', () => ({
 }))
 vi.mock('~~/server/feed', () => ({
   refreshFeed: vi.fn(),
-  feedItems: vi.fn(),
 }))
 
 const repos = await import('~~/server/db/repositories')
@@ -41,7 +40,6 @@ const removeFeedSource = repos.removeFeedSource as ReturnType<typeof vi.fn>
 const getSource = repos.getSource as ReturnType<typeof vi.fn>
 const getSubfeed = repos.getSubfeed as ReturnType<typeof vi.fn>
 const refreshFeed = feedModule.refreshFeed as ReturnType<typeof vi.fn>
-const feedItems = feedModule.feedItems as ReturnType<typeof vi.fn>
 
 function makeFeed(overrides: Partial<Feed> = {}): Feed {
   return {
@@ -108,7 +106,6 @@ beforeEach(async () => {
     .default
   const refresh = (await import('~~/server/api/feeds/[id]/refresh.post'))
     .default
-  const items = (await import('~~/server/api/feeds/[id]/items.get')).default
   const deleteMember = (await import('~~/server/api/feed-members/[id].delete'))
     .default
 
@@ -120,7 +117,6 @@ beforeEach(async () => {
   router.get('/api/feeds/:id/members', membersGet)
   router.post('/api/feeds/:id/members', membersPost)
   router.post('/api/feeds/:id/refresh', refresh)
-  router.get('/api/feeds/:id/items', items)
   router.delete('/api/feed-members/:id', deleteMember)
 
   app.use(router)
@@ -596,29 +592,6 @@ describe('POST /api/feeds/:id/refresh', () => {
 
     const res = await handler(
       new Request('http://localhost/api/feeds/1/refresh', { method: 'POST' }),
-    )
-
-    expect(res.status).toBe(404)
-  })
-})
-
-describe('GET /api/feeds/:id/items', () => {
-  it('returns the merged item stream', async () => {
-    feedItems.mockReturnValue([{ id: 1 }, { id: 2 }])
-
-    const res = await handler(new Request('http://localhost/api/feeds/1/items'))
-
-    expect(res.status).toBe(200)
-    expect(await res.json()).toHaveLength(2)
-  })
-
-  it('maps a feed-not-found error to 404', async () => {
-    feedItems.mockImplementation(() => {
-      throw new FeedNotFoundError(999)
-    })
-
-    const res = await handler(
-      new Request('http://localhost/api/feeds/999/items'),
     )
 
     expect(res.status).toBe(404)

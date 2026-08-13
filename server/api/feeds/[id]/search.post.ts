@@ -1,37 +1,45 @@
 import { createError, defineEventHandler, getQuery } from 'h3'
-import { itemQuerySchema } from '#shared/schemas/itemQuery'
+import { searchQuerySchema } from '#shared/schemas/itemQuery'
 import { feedMembers, getSource } from '../../../db/repositories'
-import { applyItemView, feedItems } from '../../../feed'
+import {
+  applyItemView,
+  feedItems,
+  matchesQuery,
+  searchFeed,
+} from '../../../feed'
 import { isNotFoundError } from '../../../utils/errors'
 import { getIdParam } from '../../../utils/params'
-import { pageSizeSetting } from '../../../utils/settings'
+import { pageSizeSetting, searchMaxPagesSetting } from '../../../utils/settings'
 
-export default defineEventHandler((event) => {
+export default defineEventHandler(async (event) => {
   const id = getIdParam(event)
 
-  const parsed = itemQuerySchema.safeParse(getQuery(event))
+  const parsed = searchQuerySchema.safeParse(getQuery(event))
   if (!parsed.success) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Invalid item query',
+      statusMessage: 'Invalid search query',
       data: parsed.error.issues,
     })
   }
   const query = parsed.data
 
   try {
-    const items = feedItems(id)
-    const pageSize = query.pageSize ?? pageSizeSetting()
+    const search = await searchFeed(id, (item) => matchesQuery(item, query.q), {
+      maxPages: query.maxPages ?? searchMaxPagesSetting(),
+    })
 
-    // Member source titles for facets.sources — per-row `getSource`, as
-    // `GET /api/feeds/:id` already does (few members, no join).
+    const pageSize = query.pageSize ?? pageSizeSetting()
     const sourceTitleById = new Map<number, string>()
     for (const member of feedMembers(id)) {
       const source = getSource(member.sourceId)
       if (source) sourceTitleById.set(source.id, source.title)
     }
+    const page = applyItemView(feedItems(id), query, pageSize, {
+      sourceTitleById,
+    })
 
-    return applyItemView(items, query, pageSize, { sourceTitleById })
+    return { page, search }
   } catch (cause) {
     if (isNotFoundError(cause)) {
       throw createError({ statusCode: 404, statusMessage: cause.message })
