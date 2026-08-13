@@ -105,7 +105,13 @@ export async function refreshSubfeed(
   }
 
   const target = subfeedTarget(source, subfeed)
-  const counts = await refreshTarget(target, source.id, database, opts, subfeedId)
+  const counts = await refreshTarget(
+    target,
+    source.id,
+    database,
+    opts,
+    subfeedId,
+  )
   return { subfeedId, sourceId: source.id, ...counts }
 }
 

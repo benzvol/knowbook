@@ -6,6 +6,7 @@ import {
   createSubfeed,
   itemsForSubfeed,
   linkItemSubfeed,
+  upsertItem,
 } from '~~/server/db/repositories'
 import { createTestDb } from './helpers'
 
@@ -64,5 +65,24 @@ describe('itemsForSubfeed', () => {
 
     expect(itemsForSubfeed(subA.id, db)).toHaveLength(1)
     expect(itemsForSubfeed(subB.id, db)).toHaveLength(1)
+  })
+})
+
+describe('upsertItem', () => {
+  it('backfills imageUrl on an already-cached row', () => {
+    const s = createSource({ url: 'u', title: 'A' }, db)
+    upsertItem({ sourceId: s.id, guid: 'g1', title: 'One', imageUrl: null }, db)
+
+    const updated = upsertItem(
+      {
+        sourceId: s.id,
+        guid: 'g1',
+        title: 'One',
+        imageUrl: 'https://img.example.com/one.jpg',
+      },
+      db,
+    )
+
+    expect(updated.imageUrl).toBe('https://img.example.com/one.jpg')
   })
 })
