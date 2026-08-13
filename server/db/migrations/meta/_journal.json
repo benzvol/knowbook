@@ -15,6 +15,13 @@
       "when": 1785443983676,
       "tag": "0001_workable_mandarin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1786653976166,
+      "tag": "0002_careful_george_stacy",
+      "breakpoints": true
     }
   ]
 }

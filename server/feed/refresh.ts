@@ -13,6 +13,7 @@ import {
   getItemBySourceGuid,
   getSource,
   getSubfeed,
+  linkItemSubfeed,
   upsertItem,
 } from '../db/repositories'
 import {
@@ -40,12 +41,15 @@ export type RefreshSourceOptions = RefreshOptions
 // Shared fetch/parse/upsert loop, over any FeedTarget. Items always cache
 // under `sourceId` — for a subfeed that's the parent's id — so the existing
 // `(sourceId, guid)` unique index keeps a single row per entry regardless of
-// which target it arrived through.
+// which target it arrived through. When `subfeedId` is given (i.e. this
+// target is a subfeed), each upserted row is additionally linked via
+// `item_subfeeds`, so the subfeed's own view can narrow to just its items.
 async function refreshTarget(
   target: FeedTarget,
   sourceId: number,
   database: DB,
   opts: PagesOptions,
+  subfeedId?: number,
 ): Promise<RefreshCounts> {
   const counts: RefreshCounts = {
     seen: 0,
@@ -61,7 +65,8 @@ async function refreshTarget(
       counts.seen++
       const existing = getItemBySourceGuid(sourceId, parsed.guid, database)
       const newItem: NewItem = { ...parsed, sourceId }
-      upsertItem(newItem, database)
+      const row = upsertItem(newItem, database)
+      if (subfeedId != null) linkItemSubfeed(row.id, subfeedId, database)
       if (existing) counts.updated++
       else counts.inserted++
     }
@@ -100,7 +105,7 @@ export async function refreshSubfeed(
   }
 
   const target = subfeedTarget(source, subfeed)
-  const counts = await refreshTarget(target, source.id, database, opts)
+  const counts = await refreshTarget(target, source.id, database, opts, subfeedId)
   return { subfeedId, sourceId: source.id, ...counts }
 }
 

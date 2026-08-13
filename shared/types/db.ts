@@ -5,6 +5,7 @@ import type {
   bookmarks,
   feeds,
   feedSources,
+  itemSubfeeds,
   items,
   settings,
   sources,
@@ -53,6 +54,9 @@ export type FeedMemberDetail = FeedSource & {
 
 export type Item = typeof items.$inferSelect
 export type NewItem = typeof items.$inferInsert
+
+export type ItemSubfeed = typeof itemSubfeeds.$inferSelect
+export type NewItemSubfeed = typeof itemSubfeeds.$inferInsert
 
 export type Bookmark = typeof bookmarks.$inferSelect
 export type NewBookmark = typeof bookmarks.$inferInsert
