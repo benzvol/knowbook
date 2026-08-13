@@ -81,7 +81,12 @@ subfeeds), with merge + de-duplication of normalised items into one stream.
 
 A reusable view layer for sources, subfeeds and feeds providing filtering,
 automatic sorting, title/description search, and search-until-found pagination
-with a configurable max-page cap. No drag-and-drop here.
+with a configurable max-page cap, in three layouts (list, grid, editorial). No
+drag-and-drop here. Extracts item images from the several competing feed
+conventions (`media:thumbnail`, `media:content`, `image/*` enclosures, …) so the
+image-led layouts have something to show. Also settles what 05 and 06 deferred
+here: an `item_subfeeds` join so a subfeed view (and a subfeed-narrowed feed
+member) shows only its own items, and sibling subfeeds side-by-side as columns.
 
 ## 08 — Bookmarks
 
