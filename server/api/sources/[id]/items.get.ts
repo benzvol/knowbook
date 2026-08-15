@@ -24,9 +24,15 @@ export default defineEventHandler((event) => {
     })
   }
   const query = parsed.data
-  const pageSize = query.pageSize ?? pageSizeSetting()
+  // Reported alongside the effective size so the UI can name what "default"
+  // means without mistaking an explicitly chosen size for it.
+  const defaultPageSize = pageSizeSetting()
+  const pageSize = query.pageSize ?? defaultPageSize
 
-  return applyItemView(itemsForSource(id), query, pageSize, {
-    sourceTitleById: new Map([[source.id, source.title]]),
-  })
+  return {
+    ...applyItemView(itemsForSource(id), query, pageSize, {
+      sourceTitleById: new Map([[source.id, source.title]]),
+    }),
+    defaultPageSize,
+  }
 })

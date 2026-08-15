@@ -36,10 +36,16 @@ export default defineEventHandler(async (event) => {
     { maxPages: query.maxPages ?? searchMaxPagesSetting() },
   )
 
-  const pageSize = query.pageSize ?? pageSizeSetting()
-  const page = applyItemView(itemsForSubfeed(id), query, pageSize, {
-    sourceTitleById: source ? new Map([[source.id, source.title]]) : undefined,
-  })
+  const defaultPageSize = pageSizeSetting()
+  const pageSize = query.pageSize ?? defaultPageSize
+  const page = {
+    ...applyItemView(itemsForSubfeed(id), query, pageSize, {
+      sourceTitleById: source
+        ? new Map([[source.id, source.title]])
+        : undefined,
+    }),
+    defaultPageSize,
+  }
 
   return { page, search }
 })

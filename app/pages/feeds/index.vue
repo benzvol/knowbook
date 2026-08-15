@@ -21,11 +21,14 @@ const noFeedsYet = computed(() => !store.loading && store.feeds.length === 0)
 // Fixed layout plus explicit widths, matching the sources list.
 const tableUi = { base: 'table-fixed w-full' }
 
+// How many member chips a row shows before collapsing the rest into "+N more".
+const MAX_MEMBER_CHIPS = 3
+
 const columns: TableColumn<FeedListItem>[] = [
   {
     accessorKey: 'name',
     header: 'Name',
-    meta: { class: { th: 'w-1/2', td: 'truncate' } },
+    meta: { class: { th: 'w-1/3', td: 'truncate' } },
     // The name is the obvious thing to click on a list, so make it the primary
     // way in rather than leaving the row's only destination behind a menu.
     cell: ({ row }) =>
@@ -41,11 +44,47 @@ const columns: TableColumn<FeedListItem>[] = [
   {
     id: 'members',
     header: 'Members',
-    meta: { class: { th: 'w-1/4' } },
-    cell: ({ row }) =>
-      h(UBadge, { variant: 'subtle', color: 'neutral' }, () =>
-        String(row.original.memberCount),
-      ),
+    meta: { class: { th: 'w-1/2' } },
+    // Names, not just a count — the count told you nothing about what the feed
+    // actually aggregates. Chips match the feed page's own member display,
+    // minus its links and remove buttons.
+    cell: ({ row }) => {
+      const labels = row.original.memberLabels
+      const shown = labels.slice(0, MAX_MEMBER_CHIPS)
+      const hidden = labels.length - shown.length
+
+      return h('div', { class: 'flex flex-wrap items-center gap-1' }, [
+        ...shown.map((label) =>
+          h(
+            UBadge,
+            {
+              key: label,
+              variant: 'subtle',
+              color: 'neutral',
+              class: 'max-w-48 truncate',
+              title: label,
+            },
+            () => label,
+          ),
+        ),
+        // A fixed cap rather than a measured fit: knowing how many chips fit
+        // needs per-chip widths at render time, and a predictable cap reads
+        // the same on every row. The full list stays available on hover.
+        ...(hidden > 0
+          ? [
+              h(
+                UBadge,
+                {
+                  variant: 'soft',
+                  color: 'neutral',
+                  title: labels.slice(MAX_MEMBER_CHIPS).join(', '),
+                },
+                () => `+${hidden} more`,
+              ),
+            ]
+          : []),
+      ])
+    },
   },
   {
     id: 'actions',

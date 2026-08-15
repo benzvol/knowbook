@@ -29,15 +29,19 @@ export default defineEventHandler(async (event) => {
       maxPages: query.maxPages ?? searchMaxPagesSetting(),
     })
 
-    const pageSize = query.pageSize ?? pageSizeSetting()
+    const defaultPageSize = pageSizeSetting()
+    const pageSize = query.pageSize ?? defaultPageSize
     const sourceTitleById = new Map<number, string>()
     for (const member of feedMembers(id)) {
       const source = getSource(member.sourceId)
       if (source) sourceTitleById.set(source.id, source.title)
     }
-    const page = applyItemView(feedItems(id), query, pageSize, {
-      sourceTitleById,
-    })
+    const page = {
+      ...applyItemView(feedItems(id), query, pageSize, {
+        sourceTitleById,
+      }),
+      defaultPageSize,
+    }
 
     return { page, search }
   } catch (cause) {

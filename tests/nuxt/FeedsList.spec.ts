@@ -16,13 +16,19 @@ function makeFeed(overrides: Partial<FeedListItem> = {}): FeedListItem {
     createdAt: new Date(),
     updatedAt: new Date(),
     memberCount: 2,
+    memberLabels: [],
     ...overrides,
   }
 }
 
 const feeds = [
-  makeFeed({ id: 1, name: 'Developer', memberCount: 2 }),
-  makeFeed({ id: 2, name: 'Data', memberCount: 1 }),
+  makeFeed({
+    id: 1,
+    name: 'Developer',
+    memberCount: 2,
+    memberLabels: ['Hacker News', 'Telex → G7'],
+  }),
+  makeFeed({ id: 2, name: 'Data', memberCount: 1, memberLabels: ['Telex'] }),
 ]
 
 beforeEach(() => {
@@ -69,6 +75,38 @@ describe('feeds list page', () => {
     ).map((i) => i.label)
 
     expect(labels).toEqual(['Rename', 'Refresh', 'Delete'])
+  })
+
+  it('names the members rather than only counting them', async () => {
+    const wrapper = await mountSuspended(FeedsIndexPage)
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.text()).toContain('Hacker News')
+    expect(wrapper.text()).toContain('Telex → G7')
+  })
+
+  it('collapses members past the cap into a "+N more" chip', async () => {
+    fetchMock.mockImplementation((url: string) =>
+      Promise.resolve(
+        url === '/api/feeds'
+          ? [
+              makeFeed({
+                id: 1,
+                memberCount: 15,
+                memberLabels: Array.from({ length: 15 }, (_, i) => `S${i + 1}`),
+              }),
+            ]
+          : [],
+      ),
+    )
+    const wrapper = await mountSuspended(FeedsIndexPage)
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.text()).toContain('S1')
+    expect(wrapper.text()).toContain('S3')
+    expect(wrapper.text()).toContain('+12 more')
+    // The 4th onwards are only in the overflow chip's title, not rendered.
+    expect(wrapper.text()).not.toContain('S4')
   })
 
   it('shows the empty state when there are no feeds', async () => {

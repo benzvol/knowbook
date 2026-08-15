@@ -8,6 +8,7 @@ useHead({ title: 'Sources · Knowbook' })
 const UBadge = resolveComponent('UBadge')
 const UButton = resolveComponent('UButton')
 const UDropdownMenu = resolveComponent('UDropdownMenu')
+const NuxtLink = resolveComponent('NuxtLink')
 
 const store = useSourcesStore()
 const tagsStore = useTagsStore()
@@ -101,6 +102,17 @@ const columns: TableColumn<SourceListItem>[] = [
     accessorKey: 'title',
     header: 'Title',
     meta: { class: { th: 'w-1/4', td: 'truncate' } },
+    // The title is the obvious click target on a list, so it leads to the
+    // source's items rather than being inert text.
+    cell: ({ row }) =>
+      h(
+        NuxtLink,
+        {
+          to: `/sources/${row.original.id}/items`,
+          class: 'font-medium text-highlighted hover:underline',
+        },
+        () => row.original.title,
+      ),
   },
   {
     accessorKey: 'url',

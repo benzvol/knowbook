@@ -180,6 +180,7 @@ async function onRefresh() {
                 </NuxtLink>
               </h2>
               <ItemsItemList
+                single-column
                 :items="subfeedView(subfeed.id)?.items ?? []"
                 :mode="mode"
                 :loading="loading"

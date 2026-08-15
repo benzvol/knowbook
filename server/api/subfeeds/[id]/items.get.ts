@@ -31,9 +31,15 @@ export default defineEventHandler((event) => {
     })
   }
   const query = parsed.data
-  const pageSize = query.pageSize ?? pageSizeSetting()
+  const defaultPageSize = pageSizeSetting()
+  const pageSize = query.pageSize ?? defaultPageSize
 
-  return applyItemView(itemsForSubfeed(id), query, pageSize, {
-    sourceTitleById: source ? new Map([[source.id, source.title]]) : undefined,
-  })
+  return {
+    ...applyItemView(itemsForSubfeed(id), query, pageSize, {
+      sourceTitleById: source
+        ? new Map([[source.id, source.title]])
+        : undefined,
+    }),
+    defaultPageSize,
+  }
 })

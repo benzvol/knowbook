@@ -15,7 +15,7 @@ import type { SearchMeta } from '~/stores/items'
  * toolbar, both pagers and refresh.
  */
 const props = defineProps<{
-  view?: ItemPage<Item> & { facets: ItemFacets }
+  view?: ItemPage<Item> & { facets: ItemFacets; defaultPageSize: number }
   query: ItemQueryInput
   mode: ItemViewMode
   /** Whether the target can walk further pages over the network. */
@@ -47,7 +47,7 @@ const showTopPager = computed(() => (props.view?.pageCount ?? 0) > 1)
       :facets="view.facets"
       :query="query"
       :mode="mode"
-      :default-page-size="view.pageSize"
+      :default-page-size="view.defaultPageSize"
       :can-refresh="canRefresh"
       :refreshing="refreshing"
       @patch="emit('patch', $event)"

@@ -18,9 +18,8 @@ vi.mock('~~/server/feed', () => ({
 
 const repos = await import('~~/server/db/repositories')
 const feed = await import('~~/server/feed')
-const { SourceNotFoundError, SubfeedNotFoundError } = await import(
-  '~~/server/feed/errors'
-)
+const { SourceNotFoundError, SubfeedNotFoundError } =
+  await import('~~/server/feed/errors')
 
 const getSource = repos.getSource as ReturnType<typeof vi.fn>
 const subfeedsForSource = repos.subfeedsForSource as ReturnType<typeof vi.fn>
@@ -65,16 +64,14 @@ beforeEach(async () => {
   app = createApp()
   const router = createRouter()
 
-  const getForSource = (
-    await import('~~/server/api/sources/[id]/subfeeds.get')
-  ).default
+  const getForSource = (await import('~~/server/api/sources/[id]/subfeeds.get'))
+    .default
   const postForSource = (
     await import('~~/server/api/sources/[id]/subfeeds.post')
   ).default
   const getOne = (await import('~~/server/api/subfeeds/[id].get')).default
   const patchOne = (await import('~~/server/api/subfeeds/[id].patch')).default
-  const deleteOne = (await import('~~/server/api/subfeeds/[id].delete'))
-    .default
+  const deleteOne = (await import('~~/server/api/subfeeds/[id].delete')).default
   const refresh = (await import('~~/server/api/subfeeds/[id]/refresh.post'))
     .default
 
