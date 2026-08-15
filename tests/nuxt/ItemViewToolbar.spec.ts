@@ -47,16 +47,89 @@ describe('ItemViewToolbar', () => {
     expect(wrapper.emitted('patch')).toContainEqual([{ sort: 'title' }])
   })
 
-  it('emits update:mode from the layout select', async () => {
+  it('emits update:mode from the layout buttons', async () => {
     const wrapper = await mountSuspended(ItemViewToolbar, {
       props: { facets: singleSourceFacets, query: baseQuery(), mode: 'list' },
     })
 
-    const selects = wrapper.findAllComponents({ name: 'USelect' })
-    const layoutSelect = selects[selects.length - 1]!
-    await layoutSelect.vm.$emit('update:modelValue', 'grid')
+    const grid = wrapper
+      .findAll('button')
+      .find((b) => b.attributes('aria-label') === 'Grid')!
+    await grid.trigger('click')
 
     expect(wrapper.emitted('update:mode')).toContainEqual(['grid'])
+  })
+
+  it('labels every layout button for accessibility', async () => {
+    const wrapper = await mountSuspended(ItemViewToolbar, {
+      props: { facets: singleSourceFacets, query: baseQuery(), mode: 'list' },
+    })
+
+    const labels = wrapper
+      .findAll('button')
+      .map((b) => b.attributes('aria-label'))
+
+    expect(labels).toContain('List')
+    expect(labels).toContain('Grid')
+    expect(labels).toContain('Editorial')
+  })
+
+  it('names the effective page size in the Default option', async () => {
+    const wrapper = await mountSuspended(ItemViewToolbar, {
+      props: {
+        facets: singleSourceFacets,
+        query: baseQuery(),
+        mode: 'list',
+        defaultPageSize: 25,
+      },
+    })
+
+    const pageSizeSelect = wrapper.findAllComponents({ name: 'USelect' })[1]!
+    const items = pageSizeSelect.props('items') as { label: string }[]
+    expect(items[0]!.label).toBe('Default (25)')
+  })
+
+  it('clears an explicit page size back to the default', async () => {
+    const wrapper = await mountSuspended(ItemViewToolbar, {
+      props: {
+        facets: singleSourceFacets,
+        query: baseQuery({ pageSize: 50 }),
+        mode: 'list',
+        defaultPageSize: 25,
+      },
+    })
+
+    // `0` is the sentinel for "no explicit size"; the schema's `min(1)` would
+    // reject a literal 0, so it must reach the query as `undefined`.
+    const pageSizeSelect = wrapper.findAllComponents({ name: 'USelect' })[1]!
+    await pageSizeSelect.vm.$emit('update:modelValue', 0)
+
+    expect(wrapper.emitted('patch')).toContainEqual([{ pageSize: undefined }])
+  })
+
+  it('shows a refresh button only when the view can refresh', async () => {
+    const without = await mountSuspended(ItemViewToolbar, {
+      props: { facets: singleSourceFacets, query: baseQuery(), mode: 'list' },
+    })
+    expect(without.text()).not.toContain('Refresh')
+
+    const withRefresh = await mountSuspended(ItemViewToolbar, {
+      props: {
+        facets: singleSourceFacets,
+        query: baseQuery(),
+        mode: 'list',
+        canRefresh: true,
+      },
+    })
+    expect(withRefresh.text()).toContain('Refresh')
+  })
+
+  it('no longer carries a description that misaligns the Tags label', async () => {
+    const wrapper = await mountSuspended(ItemViewToolbar, {
+      props: { facets: multiSourceFacets, query: baseQuery(), mode: 'list' },
+    })
+
+    expect(wrapper.text()).not.toContain('Shows items with all selected tags.')
   })
 
   it('hides the source select for a single-source facet set', async () => {

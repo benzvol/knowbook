@@ -1,4 +1,5 @@
 import { itemQuerySchema, type ItemQueryInput } from '#shared/schemas/itemQuery'
+import type { RefreshCounts } from '#shared/types'
 import type { ItemViewRef, SearchMeta } from '~/stores/items'
 
 export const ITEM_VIEW_MODES = ['list', 'grid', 'editorial'] as const
@@ -22,6 +23,17 @@ function parseQuery(query: Record<string, unknown>): ItemQueryInput {
     : { tags: [], sourceIds: [], sort: 'newest', page: 1 }
 }
 
+export interface UseItemViewOptions {
+  /**
+   * Refetches the target from its origin. Each view kind refreshes through a
+   * different store (`useSourcesStore`/`useSubfeedsStore`/`useFeedsStore`), so
+   * the page supplies the call and this composable owns the surrounding
+   * reload + pending state. All three summaries extend `RefreshCounts`, so one
+   * shared success message covers them.
+   */
+  refresh?: () => Promise<RefreshCounts | undefined>
+}
+
 /**
  * Owns the reactive item-view query and layout mode for one target (a
  * source, a subfeed, or a feed), syncs both to the page's URL query, and
@@ -34,7 +46,10 @@ function parseQuery(query: Record<string, unknown>): ItemQueryInput {
  * (`app/pages/feeds/[id].vue`), so the initial load is awaited during SSR
  * instead of racing hydration.
  */
-export function useItemView(target: ItemViewRef) {
+export function useItemView(
+  target: ItemViewRef,
+  opts: UseItemViewOptions = {},
+) {
   const route = useRoute()
   const router = useRouter()
   const store = useItemsStore()
@@ -106,6 +121,25 @@ export function useItemView(target: ItemViewRef) {
     return store.searchDeep(target, { ...query.value, q: state.q })
   }
 
+  // Refreshing from inside the view saves the round trip through the sources
+  // list that reading a stale view otherwise required.
+  const refreshing = ref(false)
+  const canRefresh = computed(() => !!opts.refresh)
+
+  async function refresh(): Promise<RefreshCounts | undefined> {
+    if (!opts.refresh) return undefined
+    refreshing.value = true
+    try {
+      const summary = await opts.refresh()
+      // Reload regardless: a partial refresh still cached something worth
+      // showing, and a failed one leaves the previous page in place.
+      await load()
+      return summary
+    } finally {
+      refreshing.value = false
+    }
+  }
+
   return {
     query,
     mode,
@@ -117,6 +151,9 @@ export function useItemView(target: ItemViewRef) {
     setPage,
     setMode,
     searchDeep,
+    refresh,
+    refreshing,
+    canRefresh,
     reload: load,
   }
 }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { SubfeedCreateInput } from '#shared/schemas/subfeed'
+import type { Subfeed } from '#shared/types'
 
 const route = useRoute()
 const sourceId = Number(route.params.id)
@@ -24,6 +25,9 @@ const noSubfeedsYet = computed(
 
 // `null` means "add"; an id means "edit that subfeed".
 const editingId = ref<number | null>(null)
+// Seeds an add form from an existing subfeed (duplicate), without making it an
+// edit of that subfeed.
+const prefill = ref<Pick<Subfeed, 'name' | 'queryParams'>>()
 const formModalOpen = ref(false)
 const submitting = ref(false)
 const nameError = ref<string>()
@@ -34,14 +38,38 @@ const editingSubfeed = computed(() =>
     : subfeeds.value.find((s) => s.id === editingId.value),
 )
 
+// Remounts the form whenever the modal's purpose changes, so its `reactive`
+// initial state is rebuilt rather than reused from the previous open.
+const formKey = computed(() =>
+  editingId.value != null
+    ? `edit-${editingId.value}`
+    : prefill.value
+      ? `copy-${prefill.value.name}`
+      : 'new',
+)
+
 function openAdd() {
   editingId.value = null
+  prefill.value = undefined
   nameError.value = undefined
   formModalOpen.value = true
 }
 
 function openEdit(id: number) {
   editingId.value = id
+  prefill.value = undefined
+  nameError.value = undefined
+  formModalOpen.value = true
+}
+
+function openDuplicate(id: number) {
+  const original = subfeeds.value.find((s) => s.id === id)
+  if (!original) return
+  editingId.value = null
+  prefill.value = {
+    name: `${original.name} (copy)`,
+    queryParams: original.queryParams,
+  }
   nameError.value = undefined
   formModalOpen.value = true
 }
@@ -127,15 +155,29 @@ function isOverride(key: string, queryParams: Record<string, string> | null) {
 <template>
   <div class="flex flex-col gap-4">
     <template v-if="source">
+      <AppBackLink to="/sources" label="sources" />
+
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-xl font-semibold">Subfeeds</h1>
           <p class="text-sm text-muted">
-            {{ source.title }} ·
+            <NuxtLink :to="`/sources/${source.id}/items`" class="underline">
+              {{ source.title }}
+            </NuxtLink>
+            ·
             <span class="break-all">{{ source.url }}</span>
           </p>
         </div>
-        <UButton label="Add subfeed" icon="i-ph-plus" @click="openAdd" />
+        <div class="flex gap-2">
+          <UButton
+            label="Items"
+            icon="i-ph-newspaper"
+            color="neutral"
+            variant="subtle"
+            :to="`/sources/${source.id}/items`"
+          />
+          <UButton label="Add subfeed" icon="i-ph-plus" @click="openAdd" />
+        </div>
       </div>
 
       <UAlert
@@ -178,6 +220,7 @@ function isOverride(key: string, queryParams: Record<string, string> | null) {
                 color="neutral"
                 variant="ghost"
                 aria-label="View items"
+                title="Items"
                 :to="`/subfeeds/${subfeed.id}`"
               />
               <UButton
@@ -185,6 +228,7 @@ function isOverride(key: string, queryParams: Record<string, string> | null) {
                 color="neutral"
                 variant="ghost"
                 aria-label="Refresh subfeed"
+                title="Refresh"
                 @click="onRefresh(subfeed.id)"
               />
               <UButton
@@ -192,7 +236,16 @@ function isOverride(key: string, queryParams: Record<string, string> | null) {
                 color="neutral"
                 variant="ghost"
                 aria-label="Edit subfeed"
+                title="Edit"
                 @click="openEdit(subfeed.id)"
+              />
+              <UButton
+                icon="i-ph-copy"
+                color="neutral"
+                variant="ghost"
+                aria-label="Duplicate subfeed"
+                title="Duplicate"
+                @click="openDuplicate(subfeed.id)"
               />
               <UButton
                 icon="i-ph-trash"
@@ -213,13 +266,20 @@ function isOverride(key: string, queryParams: Record<string, string> | null) {
 
       <UModal
         v-model:open="formModalOpen"
-        :title="editingSubfeed ? 'Edit subfeed' : 'Add subfeed'"
+        :title="
+          editingSubfeed
+            ? 'Edit subfeed'
+            : prefill
+              ? 'Duplicate subfeed'
+              : 'Add subfeed'
+        "
       >
         <template #content>
           <div class="p-4">
             <SubfeedsSubfeedForm
-              :key="editingId ?? 'new'"
+              :key="formKey"
               :subfeed="editingSubfeed"
+              :prefill="prefill"
               :parent-query-params="source.queryParams"
               :parent-pagination="source.pagination"
               :name-error="nameError"
