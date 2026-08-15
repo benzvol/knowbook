@@ -4,6 +4,7 @@ import * as schema from '~~/server/db/schema'
 import {
   addFeedSource,
   attachTag,
+  createBookmark,
   createFeed,
   createItem,
   createSource,
@@ -124,5 +125,25 @@ describe('constraints', () => {
 
     expect(db.select().from(schema.itemSubfeeds).all()).toHaveLength(0)
     expect(db.select().from(schema.items).all()).toHaveLength(1)
+  })
+
+  it('cascades item deletion to its bookmark', () => {
+    const s = createSource({ url: 'u', title: 'A' }, db)
+    const item = createItem({ sourceId: s.id, guid: 'i1', title: 'i1' }, db)
+    createBookmark({ itemId: item.id }, db)
+
+    deleteItem(item.id, db)
+
+    expect(db.select().from(schema.bookmarks).all()).toHaveLength(0)
+  })
+
+  it('cascades source deletion to bookmarks of its items (invisible today, stated in the delete-source dialog)', () => {
+    const s = createSource({ url: 'u', title: 'A' }, db)
+    const item = createItem({ sourceId: s.id, guid: 'i1', title: 'i1' }, db)
+    createBookmark({ itemId: item.id }, db)
+
+    deleteSource(s.id, db)
+
+    expect(db.select().from(schema.bookmarks).all()).toHaveLength(0)
   })
 })
