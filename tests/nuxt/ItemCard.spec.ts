@@ -88,4 +88,42 @@ describe('ItemCard', () => {
     expect(wrapper.find('img').exists()).toBe(false)
     expect(wrapper.find('.aspect-video').exists()).toBe(false)
   })
+
+  it('renders the bookmark toggle only when bookmarkable', async () => {
+    const off = await mountSuspended(ItemCard, {
+      props: { item: makeItem(), mode: 'list' },
+    })
+    expect(off.find('button[aria-label="Bookmark"]').exists()).toBe(false)
+
+    const on = await mountSuspended(ItemCard, {
+      props: { item: makeItem(), mode: 'list', bookmarkable: true },
+    })
+    expect(on.find('button[aria-label="Bookmark"]').exists()).toBe(true)
+  })
+
+  it('shows the filled icon when bookmarked', async () => {
+    const wrapper = await mountSuspended(ItemCard, {
+      props: {
+        item: makeItem(),
+        mode: 'list',
+        bookmarkable: true,
+        bookmarked: true,
+      },
+    })
+
+    expect(wrapper.find('button[aria-label="Remove bookmark"]').exists()).toBe(
+      true,
+    )
+  })
+
+  it('emits toggle-bookmark with nothing else changing', async () => {
+    const wrapper = await mountSuspended(ItemCard, {
+      props: { item: makeItem(), mode: 'list', bookmarkable: true },
+    })
+
+    await wrapper.find('button[aria-label="Bookmark"]').trigger('click')
+
+    expect(wrapper.emitted('toggle-bookmark')).toHaveLength(1)
+    expect(wrapper.text()).toContain('A headline')
+  })
 })

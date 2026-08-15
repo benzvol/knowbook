@@ -38,6 +38,18 @@ const emit = defineEmits<{
 
 // Only worth the vertical space once there is somewhere to page to.
 const showTopPager = computed(() => (props.view?.pageCount ?? 0) > 1)
+
+// The one place the bookmark store is wired (issue 08): every item page
+// shares this component, so none of them need their own store dependency.
+// Fetched once — a page's own filtering/paging never needs to refetch it.
+const bookmarksStore = useBookmarksStore()
+onMounted(() => {
+  if (bookmarksStore.refs.length === 0) bookmarksStore.fetchRefs()
+})
+const bookmarkedItemIds = computed(() => bookmarksStore.bookmarkedItemIds)
+function toggleBookmark(itemId: number) {
+  bookmarksStore.toggle(itemId)
+}
 </script>
 
 <template>
@@ -66,13 +78,19 @@ const showTopPager = computed(() => (props.view?.pageCount ?? 0) > 1)
       @update:page="emit('update:page', $event)"
     />
 
-    <slot name="list">
+    <slot
+      name="list"
+      :bookmarked-item-ids="bookmarkedItemIds"
+      :toggle-bookmark="toggleBookmark"
+    >
       <ItemsItemList
         :items="view?.items ?? []"
         :mode="mode"
         :source-titles="sourceTitles"
         :loading="loading"
         :error="error"
+        :bookmarked-item-ids="bookmarkedItemIds"
+        @toggle-bookmark="toggleBookmark"
       />
     </slot>
 

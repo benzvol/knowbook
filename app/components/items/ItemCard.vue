@@ -14,6 +14,14 @@ const props = defineProps<{
   reserveMedia?: boolean
   /** The item's source title, resolved by the caller from the view's facets. */
   sourceTitle?: string
+  /** Whether to render the bookmark toggle at all — off by default so the
+   * card stays presentational until a caller opts in (issue 08). */
+  bookmarkable?: boolean
+  bookmarked?: boolean
+}>()
+
+const emit = defineEmits<{
+  'toggle-bookmark': []
 }>()
 
 // A broken/hotlinked image that 404s or times out disappears rather than
@@ -74,18 +82,38 @@ const publishedLabel = computed(() =>
       />
 
       <div class="flex flex-1 flex-col gap-1">
-        <a
-          v-if="item.link"
-          :href="item.link"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="font-medium text-highlighted underline"
-        >
-          {{ item.title }}
-        </a>
-        <span v-else class="font-medium text-highlighted">
-          {{ item.title }}
-        </span>
+        <div class="flex items-start justify-between gap-2">
+          <a
+            v-if="item.link"
+            :href="item.link"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="font-medium text-highlighted underline"
+          >
+            {{ item.title }}
+          </a>
+          <span v-else class="font-medium text-highlighted">
+            {{ item.title }}
+          </span>
+
+          <!--
+            One card chrome, not two nested UCards — bookmarkable views
+            (issue 08) render the toggle here; other item views simply omit
+            `bookmarkable` and get nothing.
+          -->
+          <UButton
+            v-if="bookmarkable"
+            :icon="
+              bookmarked ? 'i-ph-bookmark-simple-fill' : 'i-ph-bookmark-simple'
+            "
+            :color="bookmarked ? 'primary' : 'neutral'"
+            variant="ghost"
+            size="sm"
+            :aria-label="bookmarked ? 'Remove bookmark' : 'Bookmark'"
+            :title="bookmarked ? 'Remove bookmark' : 'Bookmark'"
+            @click="emit('toggle-bookmark')"
+          />
+        </div>
 
         <p v-if="sourceTitle || publishedLabel" class="text-sm text-muted">
           <template v-if="sourceTitle">{{ sourceTitle }}</template>
@@ -104,6 +132,8 @@ const publishedLabel = computed(() =>
             {{ tag }}
           </UBadge>
         </div>
+
+        <slot name="footer" />
       </div>
     </div>
   </UCard>

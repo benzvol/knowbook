@@ -159,7 +159,10 @@ async function onRefresh() {
         @search-deep="searchDeep"
         @refresh="onRefresh"
       >
-        <template v-if="bySubfeed" #list>
+        <template
+          v-if="bySubfeed"
+          #list="{ bookmarkedItemIds, toggleBookmark }"
+        >
           <!--
             Fixed-width columns rather than `flex-1`, so they stop compressing
             as subfeeds are added and simply scroll — predictable at three and
@@ -185,6 +188,8 @@ async function onRefresh() {
                 :mode="mode"
                 :loading="loading"
                 :error="error"
+                :bookmarked-item-ids="bookmarkedItemIds"
+                @toggle-bookmark="toggleBookmark"
               />
             </div>
           </div>

@@ -17,6 +17,17 @@ const props = defineProps<{
    * container stops splitting.
    */
   singleColumn?: boolean
+  /**
+   * Item ids currently bookmarked, for the toggle's filled/outline state.
+   * Absent (rather than an empty `Set`) means "no bookmark toggle at all" —
+   * the source/subfeed/feed item pages that don't wire up bookmarking simply
+   * omit this prop.
+   */
+  bookmarkedItemIds?: Set<number>
+}>()
+
+const emit = defineEmits<{
+  'toggle-bookmark': [itemId: number]
 }>()
 
 // Grid mode reserves a fixed-ratio image slot so cards stay uniform even when
@@ -63,6 +74,9 @@ const containerClass = computed(() => {
       :mode="mode"
       :reserve-media="anyImage"
       :source-title="sourceTitles?.get(item.sourceId)"
+      :bookmarkable="!!bookmarkedItemIds"
+      :bookmarked="bookmarkedItemIds?.has(item.id)"
+      @toggle-bookmark="emit('toggle-bookmark', item.id)"
     />
   </div>
 </template>
