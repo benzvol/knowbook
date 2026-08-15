@@ -20,9 +20,10 @@ platform concerns.
 | 06  | Composed feeds                | 03, 05     |
 | 07  | Shared content views          | 02, 03     |
 | 08  | Bookmarks                     | 07         |
-| 09  | Managed sources from config   | 03         |
+| 09  | Managed sources from config   | 03, 05     |
 | 10  | Export & import               | 03, 06, 08 |
 | 11  | Settings & theming            | 00         |
+| 12  | Feed generator (no-RSS sites) | 02, 03     |
 
 ---
 
@@ -102,6 +103,15 @@ to load into their own sources list. Designed to grow into per-source plugin-sty
 handling of individual sources' quirks, and reserves schema seams for later
 scraping / TTS.
 
+A managed source can additionally declare its filtering API **natively**: a
+**query template** (Handlebars) that renders the source's filter param, plus a
+**filter schema** of allowed values per template variable. Authoring a subfeed of
+such a source then becomes a form of labelled selects instead of a hand-typed
+JSON blob — for telex.hu, picking site `g7` renders
+`filters={"superTagSiteSlugs":["g7"],…}` for you. Both fields are system-defined
+and config-only; rendering happens at save time into the existing `queryParams`,
+so the feed engine is untouched.
+
 Users cannot create or edit managed sources, and the planned _"save as managed"_
 promotion is **dropped**: `managed` is written only by the config loader (see
 04b). Once export exists (issue 10), a small script can lift a source's properties
@@ -117,3 +127,14 @@ back, with validation and sensible merge/replace behaviour.
 
 App settings (default page size, search cap, …) plus light (beige) and dark
 (dark brown) themes with persisted user preference.
+
+## 12 — Feed generator (no-RSS sites)
+
+User-facing: turn an ordinary HTML listing page into a normalised item stream for
+sites that publish no feed. The user gives a URL, a CSS selector for the item
+list, and selectors for each item's link and title, with description, image and
+date optional. A second parser behind the engine's existing
+`body -> ParsedItem[]` seam, so caching, pagination, search-until-found, subfeeds,
+composed feeds and the issue 07 views all apply unchanged. A selector-preview
+endpoint makes authoring selectors tractable. No headless browser, and no
+article-content extraction — listing metadata only.
