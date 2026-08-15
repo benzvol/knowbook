@@ -307,7 +307,10 @@ async function confirmDelete() {
     <UModal v-model:open="deleteModalOpen" title="Delete source">
       <template #content>
         <div class="flex flex-col gap-4 p-4">
-          <p>Are you sure? This removes the source and its cached items.</p>
+          <p>
+            Are you sure? This removes the source, its cached items, and any
+            bookmarks of those items.
+          </p>
           <div class="flex justify-end gap-2">
             <UButton
               label="Cancel"

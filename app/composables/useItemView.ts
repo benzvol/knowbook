@@ -14,13 +14,14 @@ function isViewMode(value: unknown): value is ItemViewMode {
 
 // Reuses the server's own coercion/defaults (repeated-or-comma-separated
 // tags, string->number, sort enum, …) rather than re-implementing the query
-// contract client-side. `safeParse` because a hand-edited/stale URL must
-// fall back to defaults, not crash the page.
+// contract client-side.
 function parseQuery(query: Record<string, unknown>): ItemQueryInput {
-  const parsed = itemQuerySchema.safeParse(query)
-  return parsed.success
-    ? parsed.data
-    : { tags: [], sourceIds: [], sort: 'newest', page: 1 }
+  return parseViewQuery(itemQuerySchema, query, {
+    tags: [],
+    sourceIds: [],
+    sort: 'newest',
+    page: 1,
+  })
 }
 
 export interface UseItemViewOptions {
@@ -73,13 +74,7 @@ export function useItemView(
   // client-only presentation and never sent to the API — but it still lives
   // in the URL so a grid view survives a reload.
   function syncUrl() {
-    const next: Record<string, string | string[]> = {}
-    if (state.q) next.q = state.q
-    if (state.tags.length) next.tags = state.tags
-    if (state.sourceIds.length) next.sourceIds = state.sourceIds.map(String)
-    if (state.sort !== 'newest') next.sort = state.sort
-    if (state.page !== 1) next.page = String(state.page)
-    if (state.pageSize) next.pageSize = String(state.pageSize)
+    const next = viewQueryToUrlParams(state, 'newest')
     if (mode.value !== 'list') next.mode = mode.value
     router.replace({ query: next })
   }
