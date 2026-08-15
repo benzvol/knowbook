@@ -1,27 +1,43 @@
 import type { ItemQueryInput } from '#shared/schemas/itemQuery'
 import type { Item, ItemFacets, ItemPage } from '#shared/types'
 
+// Widened to `Pick<Item, …>` (the fields each comparator actually reads),
+// and exported, so the bookmark view can delegate — e.g.
+// `(a, b) => byTitle(a.item, b.item)` — instead of duplicating the logic.
+
 // DESC/ASC by publishedAt, with undated items always last regardless of
 // direction. Handles "both items undated" explicitly rather than via an
 // Infinity-minus-Infinity trick, which produces `NaN` (not `0`) for that case
 // and would violate the sort comparator contract.
-export function byPublishedAtDesc(a: Item, b: Item): number {
+export function byPublishedAtDesc(
+  a: Pick<Item, 'publishedAt'>,
+  b: Pick<Item, 'publishedAt'>,
+): number {
   if (a.publishedAt == null) return b.publishedAt == null ? 0 : 1
   if (b.publishedAt == null) return -1
   return b.publishedAt.getTime() - a.publishedAt.getTime()
 }
 
-function byPublishedAtAsc(a: Item, b: Item): number {
+export function byPublishedAtAsc(
+  a: Pick<Item, 'publishedAt'>,
+  b: Pick<Item, 'publishedAt'>,
+): number {
   if (a.publishedAt == null) return b.publishedAt == null ? 0 : 1
   if (b.publishedAt == null) return -1
   return a.publishedAt.getTime() - b.publishedAt.getTime()
 }
 
-function byTitle(a: Item, b: Item): number {
+export function byTitle(
+  a: Pick<Item, 'title'>,
+  b: Pick<Item, 'title'>,
+): number {
   return a.title.localeCompare(b.title)
 }
 
-function byFetchedAtDesc(a: Item, b: Item): number {
+export function byFetchedAtDesc(
+  a: Pick<Item, 'fetchedAt'>,
+  b: Pick<Item, 'fetchedAt'>,
+): number {
   return b.fetchedAt.getTime() - a.fetchedAt.getTime()
 }
 
@@ -69,6 +85,29 @@ function buildFacets(
     sources: [...sourceIds]
       .map((id) => ({ id, title: sourceTitleById.get(id) ?? String(id) }))
       .sort((a, b) => a.title.localeCompare(b.title)),
+  }
+}
+
+/**
+ * Slice an already-sorted array into one page. A page past the end is empty,
+ * not an error — shared by `applyItemView` and the bookmark view so that
+ * behaviour can't drift between the two.
+ */
+export function paginate<T>(
+  sorted: T[],
+  page: number,
+  pageSize: number,
+): ItemPage<T> {
+  const total = sorted.length
+  const pageCount = Math.ceil(total / pageSize)
+  const start = (page - 1) * pageSize
+
+  return {
+    items: sorted.slice(start, start + pageSize),
+    total,
+    page,
+    pageSize,
+    pageCount,
   }
 }
 
@@ -122,16 +161,5 @@ export function applyItemView(
 
   const sorted = [...filtered].sort(comparators[query.sort])
 
-  const total = sorted.length
-  const pageCount = Math.ceil(total / pageSize)
-  const start = (query.page - 1) * pageSize
-
-  return {
-    items: sorted.slice(start, start + pageSize),
-    total,
-    page: query.page,
-    pageSize,
-    pageCount,
-    facets,
-  }
+  return { ...paginate(sorted, query.page, pageSize), facets }
 }

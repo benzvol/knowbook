@@ -91,3 +91,18 @@ export interface ItemFacets {
   tags: string[]
   sources: { id: number; title: string }[]
 }
+
+/**
+ * Structural supertype of `ItemQueryInput` and `BookmarkQueryInput` — just
+ * enough shape for `ItemViewToolbar` to stay generic over either without
+ * widening `sort` to `string` at every call site (it still is `string` here,
+ * but each concrete query narrows it to its own enum).
+ */
+export interface ViewQuery {
+  q?: string
+  tags: string[]
+  sourceIds: number[]
+  sort: string
+  page: number
+  pageSize?: number
+}
