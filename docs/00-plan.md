@@ -21,15 +21,23 @@ and expanded into individual files under [`issues/`](./issues/).
   sorting.
 - **Maintainer-managed sources** defined in a config file (URL, pagination params,
   item tags, subfeeds, …), loadable by the user but not user-editable; designed to
-  grow into per-source plugin-style handling and later scraping and TTS.
+  grow into per-source plugin-style handling and later scraping and TTS. A managed
+  source may declare its filtering API natively — a query template plus a schema
+  of allowed values — so subfeed authoring becomes a guided form (issue 09).
+- **Feed generation** for sites that publish no feed: describe an HTML listing
+  page with CSS selectors and read it as an ordinary source (issue 12).
 - **Export / import** of sources, feeds, bookmarks and settings.
 - **Light** (beige) and **dark** (dark brown) themes.
 
 ## 2. Non-Goals (for now)
 
 - Multi-user, auth, sync across devices.
-- Content scraping and text-to-speech — only _prepared for_ via config schema
-  and service seams; not implemented.
+- **Article-content** scraping (following an item's link to extract its body
+  text) and text-to-speech — only _prepared for_ via config schema and service
+  seams; not implemented. Scraping a **listing page** for item metadata _is_ in
+  scope, as issue 12.
+- JavaScript-rendered pages: no headless browser, so the generator parses the
+  HTML as fetched.
 - Mobile-native apps (responsive web only).
 
 ## 3. Tech Stack
@@ -73,7 +81,9 @@ to remote feeds (avoids CORS and keeps parsing server-side).
 
 ### Core domain model (indicative)
 
-- **Source** — url, pagination config, custom query params, `managed` flag, tags.
+- **Source** — url, pagination config, custom query params, `managed` flag, tags,
+  and an optional `scrape` config (CSS selectors) whose presence means "read this
+  page as HTML rather than as a feed" (issue 12).
 - **Tag** (+ join table) — the one source-classification axis. Tags organise,
   Feeds are what you read, Subfeeds slice a single source.
 - **Subfeed** — belongs to a Source; defined by extra query params merged over
@@ -89,9 +99,10 @@ _Managed_ sources are declared by the app **maintainer** in a config file and
 reconciled on startup; the user opts which to load into their sources list but
 cannot create or edit them, and `managed` is never writable from the client. The
 config is the extension point for handling individual sources' quirks in a
-plugin-like way. Promoting a user source to managed is deliberately **not** a
-feature — a script can lift its properties from an export (issue 10) into the
-config file instead.
+plugin-like way — including a **query template** and **filter schema** that turn
+a source's own filtering API into a guided form (issue 09). Promoting a user
+source to managed is deliberately **not** a feature — a script can lift its
+properties from an export (issue 10) into the config file instead.
 
 ## 5. Cross-Cutting Concerns
 
@@ -99,6 +110,11 @@ config file instead.
   a source and iterates pages; reused by list views and _search-until-found_.
 - **Normalisation**: all fetched entries collapse into the `Item` shape so
   views, search and bookmarks are source-agnostic.
+- **One parser seam**: the engine's only format-aware step is
+  `response body -> ParsedItem[]`. Everything downstream (pagination, caching,
+  search-until-found, composition, views) is format-blind, so a new input format
+  is a new parser rather than a new pipeline — that is what lets issue 12 read
+  HTML pages alongside RSS/Atom.
 - **Views layer**: filtering / sorting / search implemented once and shared by
   source, subfeed and feed pages (drag-and-drop sorting is bookmarks-only).
 - **Config-first extensibility**: the managed-source schema reserves fields for
