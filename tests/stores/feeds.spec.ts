@@ -21,6 +21,7 @@ function makeFeed(overrides: Partial<FeedListItem> = {}): FeedListItem {
     createdAt: new Date(),
     updatedAt: new Date(),
     memberCount: 0,
+    memberLabels: [],
     ...overrides,
   }
 }
@@ -178,11 +179,13 @@ describe('useFeedsStore', () => {
     expect(store.error).toBe('Boom')
   })
 
-  it('addMember appends to membersByFeed and bumps memberCount', async () => {
+  it('addMember appends to membersByFeed and bumps memberCount and labels', async () => {
     const member = makeMember({ id: 2 })
     fetchMock.mockResolvedValue(member)
     const store = useFeedsStore()
-    store.feeds = [makeFeed({ id: 1, memberCount: 1 })]
+    store.feeds = [
+      makeFeed({ id: 1, memberCount: 1, memberLabels: ['Existing'] }),
+    ]
     store.membersByFeed[1] = [makeMember({ id: 1 })]
 
     const result = await store.addMember(1, { sourceId: 1 })
@@ -190,6 +193,9 @@ describe('useFeedsStore', () => {
     expect(result).toEqual(member)
     expect(store.membersByFeed[1]).toHaveLength(2)
     expect(store.feeds[0]!.memberCount).toBe(2)
+    // Labels track the count, so the feeds list stays accurate without a
+    // refetch when navigating back to it.
+    expect(store.feeds[0]!.memberLabels).toEqual(['Existing', 'Test source'])
   })
 
   it('addMember sets error and errorStatus on a 409', async () => {
@@ -209,17 +215,24 @@ describe('useFeedsStore', () => {
     expect(store.feeds[0]!.memberCount).toBe(1)
   })
 
-  it('removeMember filters membersByFeed and decrements memberCount', async () => {
+  it('removeMember filters membersByFeed and decrements memberCount and labels', async () => {
     fetchMock.mockResolvedValue(undefined)
     const store = useFeedsStore()
-    store.feeds = [makeFeed({ id: 1, memberCount: 1 })]
+    store.feeds = [
+      makeFeed({
+        id: 1,
+        memberCount: 2,
+        memberLabels: ['Test source', 'Other'],
+      }),
+    ]
     store.membersByFeed[1] = [makeMember({ id: 1 })]
 
     const ok = await store.removeMember(1, 1)
 
     expect(ok).toBe(true)
     expect(store.membersByFeed[1]).toEqual([])
-    expect(store.feeds[0]!.memberCount).toBe(0)
+    expect(store.feeds[0]!.memberCount).toBe(1)
+    expect(store.feeds[0]!.memberLabels).toEqual(['Other'])
   })
 
   it('refresh returns the aggregate summary from the API', async () => {

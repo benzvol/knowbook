@@ -9,6 +9,14 @@ const props = defineProps<{
   sourceTitles?: Map<number, string>
   loading?: boolean
   error?: string | null
+  /**
+   * Render as a single vertical stack whatever the mode. Set by callers that
+   * are already a narrow column (the side-by-side subfeed view), where grid's
+   * and editorial's own multi-column tracks would subdivide an ~20rem column
+   * into unreadable slivers. The cards keep their per-mode styling — only the
+   * container stops splitting.
+   */
+  singleColumn?: boolean
 }>()
 
 // Grid mode reserves a fixed-ratio image slot so cards stay uniform even when
@@ -21,6 +29,10 @@ const anyImage = computed(() => props.items.some((item) => !!item.imageUrl))
 // mode — switching layout never changes what "no items" or "loading" looks
 // like.
 const containerClass = computed(() => {
+  if (props.singleColumn) {
+    return props.mode === 'list' ? 'flex flex-col gap-2' : 'flex flex-col gap-4'
+  }
+
   switch (props.mode) {
     case 'grid':
       return 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'

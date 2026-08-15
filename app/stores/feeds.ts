@@ -10,6 +10,7 @@ import type {
   FeedMemberInput,
   FeedUpdateInput,
 } from '#shared/schemas/feed'
+import { feedMemberLabel } from '#shared/utils/labels'
 
 export const useFeedsStore = defineStore('feeds', {
   state: () => ({
@@ -82,12 +83,14 @@ export const useFeedsStore = defineStore('feeds', {
           body: patch,
         })
         const index = this.feeds.findIndex((f) => f.id === id)
-        // The PATCH response has no `memberCount`, so carry the existing
-        // count forward rather than losing the badge on every rename.
+        // The PATCH response carries neither `memberCount` nor `memberLabels`
+        // (only the list route hydrates them), so carry the existing values
+        // forward rather than emptying the row's members on every rename.
         if (index !== -1) {
           this.feeds[index] = {
             ...updated,
             memberCount: this.feeds[index]!.memberCount,
+            memberLabels: this.feeds[index]!.memberLabels,
           }
         }
         return updated
@@ -129,7 +132,14 @@ export const useFeedsStore = defineStore('feeds', {
           member,
         ]
         const index = this.feeds.findIndex((f) => f.id === feedId)
-        if (index !== -1) this.feeds[index]!.memberCount++
+        if (index !== -1) {
+          this.feeds[index]!.memberCount++
+          // Kept in step with the count so the feeds list stays accurate
+          // without a refetch when navigating back to it.
+          this.feeds[index]!.memberLabels.push(
+            feedMemberLabel(member.source.title, member.subfeed?.name),
+          )
+        }
         return member
       } catch (cause) {
         this.error = errorMessage(cause)
@@ -142,12 +152,26 @@ export const useFeedsStore = defineStore('feeds', {
       this.error = null
       this.errorStatus = null
       try {
+        const removed = (this.membersByFeed[feedId] ?? []).find(
+          (m) => m.id === memberId,
+        )
         await $fetch(`/api/feed-members/${memberId}`, { method: 'DELETE' })
         this.membersByFeed[feedId] = (this.membersByFeed[feedId] ?? []).filter(
           (m) => m.id !== memberId,
         )
         const index = this.feeds.findIndex((f) => f.id === feedId)
-        if (index !== -1) this.feeds[index]!.memberCount--
+        if (index !== -1) {
+          this.feeds[index]!.memberCount--
+          if (removed) {
+            const label = feedMemberLabel(
+              removed.source.title,
+              removed.subfeed?.name,
+            )
+            const labels = this.feeds[index]!.memberLabels
+            const at = labels.indexOf(label)
+            if (at !== -1) labels.splice(at, 1)
+          }
+        }
         return true
       } catch (cause) {
         this.error = errorMessage(cause)

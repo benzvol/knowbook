@@ -6,8 +6,10 @@ import {
   createSource,
   findFeedByName,
   getFeedMember,
+  createSubfeed,
   listFeedsWithCounts,
   memberCountsForFeeds,
+  memberLabelsForFeeds,
 } from '~~/server/db/repositories'
 import { createTestDb } from './helpers'
 
@@ -74,7 +76,62 @@ describe('findFeedByName', () => {
   })
 })
 
+describe('memberLabelsForFeeds', () => {
+  it('labels a whole-source member by its source title', () => {
+    const s = createSource({ url: 'a', title: 'Hacker News' }, db)
+    const feed = createFeed({ name: 'F' }, db)
+    addFeedSource(feed.id, s.id, null, db)
+
+    expect(memberLabelsForFeeds([feed.id], db).get(feed.id)).toEqual([
+      'Hacker News',
+    ])
+  })
+
+  it('labels a narrowed member as "Source → Subfeed"', () => {
+    const s = createSource({ url: 'a', title: 'Telex' }, db)
+    const sf = createSubfeed({ sourceId: s.id, name: 'G7' }, db)
+    const feed = createFeed({ name: 'F' }, db)
+    addFeedSource(feed.id, s.id, sf.id, db)
+
+    expect(memberLabelsForFeeds([feed.id], db).get(feed.id)).toEqual([
+      'Telex → G7',
+    ])
+  })
+
+  it('keeps labels per feed and omits feeds with no members', () => {
+    const s = createSource({ url: 'a', title: 'A' }, db)
+    const a = createFeed({ name: 'A feed' }, db)
+    const b = createFeed({ name: 'B feed' }, db)
+    addFeedSource(a.id, s.id, null, db)
+
+    const result = memberLabelsForFeeds([a.id, b.id], db)
+
+    expect(result.get(a.id)).toEqual(['A'])
+    expect(result.has(b.id)).toBe(false)
+  })
+
+  it('returns an empty map for an empty input', () => {
+    expect(memberLabelsForFeeds([], db).size).toBe(0)
+  })
+})
+
 describe('listFeedsWithCounts', () => {
+  it('hydrates member labels alongside the count', () => {
+    const s = createSource({ url: 'a', title: 'Telex' }, db)
+    const sf = createSubfeed({ sourceId: s.id, name: 'G7' }, db)
+    const feed = createFeed({ name: 'F' }, db)
+    addFeedSource(feed.id, s.id, null, db)
+    addFeedSource(feed.id, s.id, sf.id, db)
+    createFeed({ name: 'Empty' }, db)
+
+    const rows = listFeedsWithCounts(db)
+
+    expect(rows.find((r) => r.id === feed.id)?.memberLabels.toSorted()).toEqual(
+      ['Telex', 'Telex → G7'],
+    )
+    expect(rows.find((r) => r.name === 'Empty')?.memberLabels).toEqual([])
+  })
+
   it('reports each feed’s member count', () => {
     const s1 = createSource({ url: 'a', title: 'A' }, db)
     const s2 = createSource({ url: 'b', title: 'B' }, db)

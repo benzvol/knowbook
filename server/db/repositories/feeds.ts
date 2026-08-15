@@ -1,7 +1,8 @@
 import { and, eq, inArray, ne } from 'drizzle-orm'
 import type { Feed, FeedListItem, FeedSource, NewFeed } from '#shared/types'
+import { feedMemberLabel } from '#shared/utils/labels'
 import { db, type DB } from '../client'
-import { feedSources, feeds } from '../schema'
+import { feedSources, feeds, sources, subfeeds } from '../schema'
 
 export function listFeeds(database: DB = db): Feed[] {
   return database.select().from(feeds).all()
@@ -88,15 +89,51 @@ export function memberCountsForFeeds(
   return result
 }
 
-// Hydrated variant used by the feed list route: a member count for the
-// row-menu badge, fetched with one batched query instead of N.
+/**
+ * Member display labels per feed, for the feeds list — one join rather than a
+ * `feedMembers` + `getSource`/`getSubfeed` fan-out per row. Feeds with no
+ * members are simply absent from the map.
+ */
+export function memberLabelsForFeeds(
+  feedIds: number[],
+  database: DB = db,
+): Map<number, string[]> {
+  const result = new Map<number, string[]>()
+  if (feedIds.length === 0) return result
+
+  const rows = database
+    .select({
+      feedId: feedSources.feedId,
+      sourceTitle: sources.title,
+      subfeedName: subfeeds.name,
+    })
+    .from(feedSources)
+    .innerJoin(sources, eq(sources.id, feedSources.sourceId))
+    // Left join: a whole-source membership has no subfeed row to match.
+    .leftJoin(subfeeds, eq(subfeeds.id, feedSources.subfeedId))
+    .where(inArray(feedSources.feedId, feedIds))
+    .all()
+
+  for (const row of rows) {
+    const label = feedMemberLabel(row.sourceTitle, row.subfeedName)
+    const existing = result.get(row.feedId)
+    if (existing) existing.push(label)
+    else result.set(row.feedId, [label])
+  }
+  return result
+}
+
+// Hydrated variant used by the feed list route: member labels plus a count,
+// each fetched with one batched query instead of N.
 export function listFeedsWithCounts(database: DB = db): FeedListItem[] {
   const rows = listFeeds(database)
   const feedIds = rows.map((f) => f.id)
   const memberCounts = memberCountsForFeeds(feedIds, database)
+  const memberLabels = memberLabelsForFeeds(feedIds, database)
   return rows.map((feed) => ({
     ...feed,
     memberCount: memberCounts.get(feed.id) ?? 0,
+    memberLabels: memberLabels.get(feed.id) ?? [],
   }))
 }
 

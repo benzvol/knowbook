@@ -1,4 +1,9 @@
-import { createError, defineEventHandler, readBody, setResponseStatus } from 'h3'
+import {
+  createError,
+  defineEventHandler,
+  readBody,
+  setResponseStatus,
+} from 'h3'
 import { subfeedCreateSchema } from '#shared/schemas/subfeed'
 import {
   createSubfeed,

@@ -21,7 +21,8 @@ export default defineEventHandler((event) => {
 
   try {
     const items = feedItems(id)
-    const pageSize = query.pageSize ?? pageSizeSetting()
+    const defaultPageSize = pageSizeSetting()
+    const pageSize = query.pageSize ?? defaultPageSize
 
     // Member source titles for facets.sources — per-row `getSource`, as
     // `GET /api/feeds/:id` already does (few members, no join).
@@ -31,7 +32,10 @@ export default defineEventHandler((event) => {
       if (source) sourceTitleById.set(source.id, source.title)
     }
 
-    return applyItemView(items, query, pageSize, { sourceTitleById })
+    return {
+      ...applyItemView(items, query, pageSize, { sourceTitleById }),
+      defaultPageSize,
+    }
   } catch (cause) {
     if (isNotFoundError(cause)) {
       throw createError({ statusCode: 404, statusMessage: cause.message })

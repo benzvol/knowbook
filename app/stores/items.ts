@@ -20,7 +20,15 @@ export interface SearchMeta {
   counts: RefreshCounts
 }
 
-type ViewResult = ItemPage<Item> & { facets: ItemFacets }
+type ViewResult = ItemPage<Item> & {
+  facets: ItemFacets
+  /**
+   * The settings-backed page size used when the query names none. Distinct
+   * from `pageSize` (the size actually applied), so the UI can label "Default"
+   * without an explicitly chosen size masquerading as the default.
+   */
+  defaultPageSize: number
+}
 
 const SEGMENT: Record<ItemViewKind, string> = {
   source: 'sources',

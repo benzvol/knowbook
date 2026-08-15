@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { FeedMemberInput } from '#shared/schemas/feed'
 import type { FeedMemberDetail } from '#shared/types'
+import { feedMemberLabel } from '#shared/utils/labels'
 
 const route = useRoute()
 const id = Number(route.params.id)
@@ -50,9 +51,7 @@ const sourceTitles = computed(
 const paginated = true
 
 function memberLabel(member: FeedMemberDetail): string {
-  return member.subfeed
-    ? `${member.source.title} → ${member.subfeed.name}`
-    : member.source.title
+  return feedMemberLabel(member.source.title, member.subfeed?.name)
 }
 
 // A member's manage page: the subfeeds list for a narrowed member, the source
