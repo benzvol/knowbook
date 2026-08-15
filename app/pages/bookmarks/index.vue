@@ -57,10 +57,12 @@ async function onMove(id: number, target: BookmarkMoveInput) {
       description: bookmarksStore.error ?? undefined,
       color: 'error',
     })
-    // The optimistic drag already reordered the on-screen list — reload to
-    // restore the actual persisted order.
-    await reload()
   }
+  // Always reload rather than trusting the drag's local reorder: a move
+  // from the row menu (Move to top/bottom) never touches the on-screen
+  // array itself, so without this the persisted order would never show.
+  // On a successful drag this just re-confirms the order already visible.
+  await reload()
 }
 
 async function onRemove(id: number) {
