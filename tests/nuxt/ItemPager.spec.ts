@@ -77,6 +77,38 @@ describe('ItemPager', () => {
     expect(wrapper.emitted('search-deep')).toBeTruthy()
   })
 
+  it('paginates by items-per-page, so the page count matches the server page size', async () => {
+    const wrapper = await mountSuspended(ItemPager, {
+      props: {
+        total: 713,
+        page: 1,
+        pageSize: 25,
+        hasQuery: false,
+        paginated: true,
+      },
+    })
+
+    // `page-count` is not a UPagination prop — passing it was silently ignored
+    // and paged as if 10 items per page (72 pages for 713 items).
+    const pagination = wrapper.findComponent({ name: 'UPagination' })
+    expect(pagination.props('itemsPerPage')).toBe(25)
+  })
+
+  it('hides the deep-search affordance on a nav-only pager', async () => {
+    const wrapper = await mountSuspended(ItemPager, {
+      props: {
+        total: 0,
+        page: 1,
+        pageSize: 25,
+        hasQuery: true,
+        paginated: true,
+        navOnly: true,
+      },
+    })
+
+    expect(wrapper.text()).not.toContain('Search further pages')
+  })
+
   it('reports the page cap being hit', async () => {
     const wrapper = await mountSuspended(ItemPager, {
       props: {

@@ -11,6 +11,12 @@ const props = defineProps<{
   paginated: boolean
   searching?: boolean
   searchMeta?: SearchMeta
+  /**
+   * Pagination controls only, for the instance rendered above the list —
+   * "Search further pages" is a terminal action, not a navigation control, so
+   * it belongs on the bottom instance alone.
+   */
+  navOnly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -22,7 +28,7 @@ const noMatches = computed(() => props.total === 0)
 // Non-paginated targets never show the button — there are no further pages
 // to walk (`pages()` only ever yields one page for them).
 const showSearchFurther = computed(
-  () => props.hasQuery && noMatches.value && props.paginated,
+  () => !props.navOnly && props.hasQuery && noMatches.value && props.paginated,
 )
 
 function onUpdatePage(page: number) {
@@ -32,10 +38,16 @@ function onUpdatePage(page: number) {
 
 <template>
   <div class="flex flex-col items-center gap-2">
+    <!--
+      `items-per-page`, not `page-count`: Nuxt UI's UPagination declares
+      `itemsPerPage` (default 10) and exposes `pageCount` only as a slot value.
+      Passing `page-count` is silently ignored, which paged 25-item responses as
+      if they held 10 and offered page numbers the server has no items for.
+    -->
     <UPagination
       v-if="total > 0"
       :page="page"
-      :page-count="pageSize"
+      :items-per-page="pageSize"
       :total="total"
       @update:page="onUpdatePage"
     />

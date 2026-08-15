@@ -11,6 +11,12 @@ const props = defineProps<{
   error?: string | null
 }>()
 
+// Grid mode reserves a fixed-ratio image slot so cards stay uniform even when
+// only some items have an image. When *nothing* in the view has one, that
+// reasoning doesn't apply and every card would carry a pointless grey box, so
+// the slot is dropped for the whole view rather than per card.
+const anyImage = computed(() => props.items.some((item) => !!item.imageUrl))
+
 // Empty and loading states are shared across modes, not re-implemented per
 // mode — switching layout never changes what "no items" or "loading" looks
 // like.
@@ -43,6 +49,7 @@ const containerClass = computed(() => {
       :key="item.id"
       :item="item"
       :mode="mode"
+      :reserve-media="anyImage"
       :source-title="sourceTitles?.get(item.sourceId)"
     />
   </div>
