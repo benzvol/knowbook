@@ -9,6 +9,7 @@ useHead({ title: 'Feeds · Knowbook' })
 const UBadge = resolveComponent('UBadge')
 const UButton = resolveComponent('UButton')
 const UDropdownMenu = resolveComponent('UDropdownMenu')
+const NuxtLink = resolveComponent('NuxtLink')
 
 const store = useFeedsStore()
 const toast = useToast()
@@ -25,11 +26,22 @@ const columns: TableColumn<FeedListItem>[] = [
     accessorKey: 'name',
     header: 'Name',
     meta: { class: { th: 'w-1/2', td: 'truncate' } },
+    // The name is the obvious thing to click on a list, so make it the primary
+    // way in rather than leaving the row's only destination behind a menu.
+    cell: ({ row }) =>
+      h(
+        NuxtLink,
+        {
+          to: `/feeds/${row.original.id}`,
+          class: 'font-medium text-highlighted hover:underline',
+        },
+        () => row.original.name,
+      ),
   },
   {
     id: 'members',
     header: 'Members',
-    meta: { class: { th: 'w-1/3' } },
+    meta: { class: { th: 'w-1/4' } },
     cell: ({ row }) =>
       h(UBadge, { variant: 'subtle', color: 'neutral' }, () =>
         String(row.original.memberCount),
@@ -37,45 +49,52 @@ const columns: TableColumn<FeedListItem>[] = [
   },
   {
     id: 'actions',
-    meta: { class: { th: 'w-16' } },
+    // Same split as the sources list: navigation destinations get a dedicated
+    // button, one-off actions stay in the row menu.
+    meta: { class: { th: 'w-24' } },
     cell: ({ row }) =>
-      h(
-        UDropdownMenu,
-        {
-          items: [
-            {
-              label: 'Manage',
-              icon: 'i-ph-caret-right',
-              to: `/feeds/${row.original.id}`,
-            },
-            {
-              label: 'Rename',
-              icon: 'i-ph-pencil',
-              onSelect: () => openEdit(row.original),
-            },
-            {
-              label: 'Refresh',
-              icon: 'i-ph-arrow-clockwise',
-              onSelect: () => onRefresh(row.original.id),
-            },
-            {
-              label: 'Delete',
-              icon: 'i-ph-trash',
-              color: 'error',
-              onSelect: () => {
-                pendingDeleteId.value = row.original.id
+      h('div', { class: 'flex items-center justify-end gap-1' }, [
+        h(UButton, {
+          icon: 'i-ph-newspaper',
+          color: 'neutral',
+          variant: 'ghost',
+          to: `/feeds/${row.original.id}`,
+          title: 'Open',
+          'aria-label': `Open ${row.original.name}`,
+        }),
+        h(
+          UDropdownMenu,
+          {
+            items: [
+              {
+                label: 'Rename',
+                icon: 'i-ph-pencil',
+                onSelect: () => openEdit(row.original),
               },
-            },
-          ],
-        },
-        () =>
-          h(UButton, {
-            icon: 'i-ph-dots-three-vertical',
-            color: 'neutral',
-            variant: 'ghost',
-            'aria-label': 'Actions',
-          }),
-      ),
+              {
+                label: 'Refresh',
+                icon: 'i-ph-arrow-clockwise',
+                onSelect: () => onRefresh(row.original.id),
+              },
+              {
+                label: 'Delete',
+                icon: 'i-ph-trash',
+                color: 'error',
+                onSelect: () => {
+                  pendingDeleteId.value = row.original.id
+                },
+              },
+            ],
+          },
+          () =>
+            h(UButton, {
+              icon: 'i-ph-dots-three-vertical',
+              color: 'neutral',
+              variant: 'ghost',
+              'aria-label': 'More actions',
+            }),
+        ),
+      ]),
   },
 ]
 
