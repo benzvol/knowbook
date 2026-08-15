@@ -5,6 +5,13 @@ import type { ItemViewMode } from '~/composables/useItemView'
 const props = defineProps<{
   item: Item
   mode: ItemViewMode
+  /**
+   * Whether `grid` mode should reserve its fixed-ratio image slot. The list
+   * decides this for the whole view (see `ItemList.vue`): reserving it keeps
+   * cards uniform when only some items have images, but a view where none do
+   * would otherwise show a placeholder on every card.
+   */
+  reserveMedia?: boolean
   /** The item's source title, resolved by the caller from the view's facets. */
   sourceTitle?: string
 }>()
@@ -41,7 +48,7 @@ const publishedLabel = computed(() =>
         @error="imageFailed = true"
       />
       <div
-        v-else-if="mode === 'grid'"
+        v-else-if="mode === 'grid' && reserveMedia"
         class="aspect-video w-full overflow-hidden rounded bg-elevated"
       >
         <img

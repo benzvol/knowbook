@@ -53,15 +53,31 @@ describe('ItemCard', () => {
     expect(withoutLink.text()).toContain('A headline')
   })
 
-  it('shows a placeholder block instead of a shorter card in grid mode', async () => {
+  it('shows a placeholder block instead of a shorter card in grid mode when the view reserves media', async () => {
     const wrapper = await mountSuspended(ItemCard, {
-      props: { item: makeItem({ imageUrl: null }), mode: 'grid' },
+      props: {
+        item: makeItem({ imageUrl: null }),
+        mode: 'grid',
+        reserveMedia: true,
+      },
     })
 
     expect(wrapper.find('img').exists()).toBe(false)
     // The image-slot container still renders even with no image, so the
-    // card keeps its full height in the grid.
+    // card keeps its full height alongside siblings that do have one.
     expect(wrapper.find('.aspect-video').exists()).toBe(true)
+  })
+
+  it('drops the grid placeholder entirely when nothing in the view has an image', async () => {
+    const wrapper = await mountSuspended(ItemCard, {
+      props: {
+        item: makeItem({ imageUrl: null }),
+        mode: 'grid',
+        reserveMedia: false,
+      },
+    })
+
+    expect(wrapper.find('.aspect-video').exists()).toBe(false)
   })
 
   it('hides the image slot entirely in list mode when there is no image', async () => {
