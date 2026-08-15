@@ -64,5 +64,11 @@ export type NewItemSubfeed = typeof itemSubfeeds.$inferInsert
 export type Bookmark = typeof bookmarks.$inferSelect
 export type NewBookmark = typeof bookmarks.$inferInsert
 
+// A bookmark hydrated with its item, as returned by the list/create routes.
+export type BookmarkWithItem = Bookmark & { item: Item }
+
+/** Just enough to render a toggle's state and delete without a lookup. */
+export type BookmarkRef = Pick<Bookmark, 'id' | 'itemId'>
+
 export type Setting = typeof settings.$inferSelect
 export type NewSetting = typeof settings.$inferInsert

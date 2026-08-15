@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `bookmarks_item_unique` ON `bookmarks` (`item_id`);

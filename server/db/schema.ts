@@ -149,17 +149,24 @@ export const itemSubfeeds = sqliteTable(
   (t) => [primaryKey({ columns: [t.itemId, t.subfeedId] })],
 )
 
-export const bookmarks = sqliteTable('bookmarks', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  itemId: integer('item_id')
-    .notNull()
-    .references(() => items.id, { onDelete: 'cascade' }),
-  sortOrder: integer('sort_order').notNull().default(0),
-  tags: text('tags', { mode: 'json' }).$type<ItemTags>(),
-  createdAt: integer('created_at', { mode: 'timestamp_ms' })
-    .notNull()
-    .$defaultFn(() => new Date()),
-})
+export const bookmarks = sqliteTable(
+  'bookmarks',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    itemId: integer('item_id')
+      .notNull()
+      .references(() => items.id, { onDelete: 'cascade' }),
+    sortOrder: integer('sort_order').notNull().default(0),
+    tags: text('tags', { mode: 'json' }).$type<ItemTags>(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  // One bookmark per item: without it, a slow double-click on the toggle
+  // would leave two rows for one item and "is this bookmarked?" stops having
+  // an answer. The create route turns the collision into a 409.
+  (t) => [uniqueIndex('bookmarks_item_unique').on(t.itemId)],
+)
 
 export const settings = sqliteTable('settings', {
   key: text('key').primaryKey(),
