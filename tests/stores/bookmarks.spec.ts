@@ -167,6 +167,24 @@ describe('useBookmarksStore', () => {
     })
   })
 
+  describe('updateTags', () => {
+    it('replaces the items array reference, not just the row in place', async () => {
+      const store = useBookmarksStore()
+      const row = makeBookmark({ id: 1, tags: null })
+      store.page = makePage({ items: [row] })
+      const previousItems = store.page.items
+
+      fetchMock.mockResolvedValueOnce(makeBookmark({ id: 1, tags: ['rust'] }))
+      await store.updateTags(1, ['rust'])
+
+      // A consumer that copies `page.items` into its own ref (as
+      // BookmarkSortableList does) only re-syncs on a watcher comparing by
+      // reference — an in-place index assignment would never trigger it.
+      expect(store.page?.items).not.toBe(previousItems)
+      expect(store.page?.items[0]?.tags).toEqual(['rust'])
+    })
+  })
+
   describe('fetchRefs', () => {
     it('populates refs and the derived getters', async () => {
       const store = useBookmarksStore()

@@ -131,7 +131,16 @@ export const useBookmarksStore = defineStore('bookmarks', {
         })
         if (this.page) {
           const index = this.page.items.findIndex((b) => b.id === id)
-          if (index !== -1) this.page.items[index] = updated
+          // Replaces the whole array rather than assigning by index: a
+          // consumer that copies `items` into its own ref (as
+          // `BookmarkSortableList` does, to let Sortable.js reorder it) only
+          // re-syncs when the array *reference* changes, not on a mutation
+          // inside the same array.
+          if (index !== -1) {
+            const items = [...this.page.items]
+            items[index] = updated
+            this.page.items = items
+          }
         }
         return updated
       } catch (cause) {
@@ -141,9 +150,10 @@ export const useBookmarksStore = defineStore('bookmarks', {
       }
     },
 
-    // Applies the returned order optimistically (the drag has already
-    // reordered the local array visually); on failure the caller's page
-    // reload restores the persisted order.
+    // Returns the new full manual order (or undefined on failure) — persists
+    // no local state itself. A drag has already reordered its own local
+    // array optimistically; a row-menu move has not. Either way the caller
+    // reloads the page afterwards so the two paths converge on one behaviour.
     async move(
       id: number,
       target: BookmarkMoveInput,
