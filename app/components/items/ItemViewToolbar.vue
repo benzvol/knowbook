@@ -1,26 +1,45 @@
-<script setup lang="ts">
-import type { ItemQueryInput } from '#shared/schemas/itemQuery'
-import type { ItemFacets } from '#shared/types'
+<script setup lang="ts" generic="Q extends ViewQuery">
+import type { ViewQuery, ItemFacets } from '#shared/types'
 import type { ItemViewMode } from '~/composables/useItemView'
 
-const props = defineProps<{
-  facets: ItemFacets
-  query: ItemQueryInput
-  mode: ItemViewMode
-  /**
-   * The page size actually in effect when the query names none — the server's
-   * `pageSizeSetting()` value, echoed back on the response. Shown in the
-   * placeholder so "Default" states what it means.
-   */
-  defaultPageSize?: number
-  canRefresh?: boolean
-  refreshing?: boolean
-}>()
+/**
+ * Generic over its query type so `patch`'s payload stays `Partial<Q>` rather
+ * than widening `sort` to `string` — every call site (three item pages, the
+ * bookmarks page) keeps its own query type without a cast. `ViewQuery` is the
+ * structural shape both `ItemQueryInput` and `BookmarkQueryInput` satisfy.
+ */
+const props = withDefaults(
+  defineProps<{
+    facets: ItemFacets
+    query: Q
+    mode?: ItemViewMode
+    /**
+     * The page size actually in effect when the query names none — the server's
+     * `pageSizeSetting()` value, echoed back on the response. Shown in the
+     * placeholder so "Default" states what it means.
+     */
+    defaultPageSize?: number
+    canRefresh?: boolean
+    refreshing?: boolean
+    /** Overrides the sort select's options — the bookmarks view has its own set. */
+    sortOptions?: { label: string; value: Q['sort'] }[]
+    /** The layout mode switch — meaningless for the bookmarks view (issue 08: dragging has no equivalent in `grid`/`editorial`), so it opts out entirely. */
+    showModes?: boolean
+    showRefresh?: boolean
+  }>(),
+  {
+    mode: undefined,
+    defaultPageSize: undefined,
+    sortOptions: undefined,
+    showModes: true,
+    showRefresh: true,
+  },
+)
 
-// Emits query patches; holds no fetch logic itself — `useItemView` decides
-// what a patch means (e.g. resetting the page).
+// Emits query patches; holds no fetch logic itself — the caller's view
+// composable decides what a patch means (e.g. resetting the page).
 const emit = defineEmits<{
-  patch: [partial: Partial<ItemQueryInput>]
+  patch: [partial: Partial<Q>]
   'update:mode': [mode: ItemViewMode]
   refresh: []
 }>()
@@ -34,7 +53,7 @@ watch(searchTerm, (value) => {
   if (debounceHandle) clearTimeout(debounceHandle)
   debounceHandle = setTimeout(() => {
     const trimmed = value.trim()
-    emit('patch', { q: trimmed.length ? trimmed : undefined })
+    emit('patch', { q: trimmed.length ? trimmed : undefined } as Partial<Q>)
   }, SEARCH_DEBOUNCE_MS)
 })
 
@@ -51,12 +70,14 @@ watch(
 // view's facets never carry more than one, so the select would be pointless.
 const showSourceFilter = computed(() => props.facets.sources.length > 1)
 
-const SORT_OPTIONS = [
+const DEFAULT_SORT_OPTIONS = [
   { label: 'Newest', value: 'newest' },
   { label: 'Oldest', value: 'oldest' },
   { label: 'Title', value: 'title' },
   { label: 'Last fetched', value: 'fetched' },
 ]
+
+const sortOptions = computed(() => props.sortOptions ?? DEFAULT_SORT_OPTIONS)
 
 // `0` is a sentinel for "no explicit size", mapped back to `undefined` before
 // emitting — `itemQuerySchema.pageSize` is `min(1)` and would reject a literal
@@ -83,21 +104,21 @@ const MODE_BUTTONS: { mode: ItemViewMode; icon: string; label: string }[] = [
 ]
 
 function onTagsChange(tags: string[]) {
-  emit('patch', { tags })
+  emit('patch', { tags } as Partial<Q>)
 }
 
 function onSourceIdsChange(sourceIds: number[]) {
-  emit('patch', { sourceIds })
+  emit('patch', { sourceIds } as Partial<Q>)
 }
 
 function onSortChange(value: string) {
-  emit('patch', { sort: value as ItemQueryInput['sort'] })
+  emit('patch', { sort: value } as Partial<Q>)
 }
 
 function onPageSizeChange(value: number) {
   emit('patch', {
     pageSize: value === DEFAULT_PAGE_SIZE_VALUE ? undefined : value,
-  })
+  } as Partial<Q>)
 }
 </script>
 
@@ -139,7 +160,7 @@ function onPageSizeChange(value: number) {
     <UFormField label="Sort">
       <USelect
         :model-value="query.sort"
-        :items="SORT_OPTIONS"
+        :items="sortOptions"
         class="w-36"
         @update:model-value="onSortChange"
       />
@@ -154,7 +175,7 @@ function onPageSizeChange(value: number) {
       />
     </UFormField>
 
-    <UFormField label="Layout">
+    <UFormField v-if="showModes" label="Layout">
       <!--
         Native `title` rather than UTooltip: it needs no app-level provider
         (so the component mounts standalone in tests) and gives the same hover
@@ -175,7 +196,7 @@ function onPageSizeChange(value: number) {
     </UFormField>
 
     <UButton
-      v-if="canRefresh"
+      v-if="showRefresh && canRefresh"
       class="ml-auto"
       label="Refresh"
       icon="i-ph-arrow-clockwise"

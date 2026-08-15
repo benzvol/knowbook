@@ -147,4 +147,53 @@ describe('ItemViewToolbar', () => {
 
     expect(wrapper.text()).toContain('Sources')
   })
+
+  it('hides the mode switch when showModes is false', async () => {
+    const wrapper = await mountSuspended(ItemViewToolbar, {
+      props: {
+        facets: singleSourceFacets,
+        query: baseQuery(),
+        showModes: false,
+      },
+    })
+
+    const labels = wrapper
+      .findAll('button')
+      .map((b) => b.attributes('aria-label'))
+    expect(labels).not.toContain('List')
+    expect(labels).not.toContain('Grid')
+    expect(labels).not.toContain('Editorial')
+  })
+
+  it('hides the refresh button when showRefresh is false, even if canRefresh', async () => {
+    const wrapper = await mountSuspended(ItemViewToolbar, {
+      props: {
+        facets: singleSourceFacets,
+        query: baseQuery(),
+        mode: 'list',
+        canRefresh: true,
+        showRefresh: false,
+      },
+    })
+
+    expect(wrapper.text()).not.toContain('Refresh')
+  })
+
+  it('accepts a custom sortOptions list', async () => {
+    const wrapper = await mountSuspended(ItemViewToolbar, {
+      props: {
+        facets: singleSourceFacets,
+        query: { tags: [], sourceIds: [], sort: 'manual', page: 1 },
+        mode: 'list',
+        sortOptions: [
+          { label: 'Manual', value: 'manual' },
+          { label: 'Saved', value: 'bookmarked' },
+        ],
+      },
+    })
+
+    const sortSelect = wrapper.findAllComponents({ name: 'USelect' })[0]!
+    const items = sortSelect.props('items') as { label: string }[]
+    expect(items.map((i) => i.label)).toEqual(['Manual', 'Saved'])
+  })
 })

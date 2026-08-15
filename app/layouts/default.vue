@@ -5,6 +5,7 @@ const items: NavigationMenuItem[] = [
   { label: 'Home', icon: 'i-ph-house', to: '/' },
   { label: 'Sources', icon: 'i-ph-rss', to: '/sources' },
   { label: 'Feeds', icon: 'i-ph-newspaper', to: '/feeds' },
+  { label: 'Bookmarks', icon: 'i-ph-bookmark-simple', to: '/bookmarks' },
   { label: 'Organise', icon: 'i-ph-tag', to: '/organise' },
 ]
 </script>
