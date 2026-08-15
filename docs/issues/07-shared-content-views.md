@@ -512,3 +512,31 @@ path.
 - Settings **UI** for page size, the search cap and the default layout mode —
   issue 11; this issue only reads the keys.
 - Scheduled/background refresh, so views never fetch on load — issue 09+.
+
+## Known issues
+
+**Sorting by `oldest` failed once and has not reproduced.** Reported as a few
+seconds of loading followed by an error reading `undefined`. Not reproducible
+afterwards: all four sorts return 200 in ~0.2s from
+`GET /api/sources/:id/items?sort=…`, and selecting Oldest in the browser rendered
+correctly with an empty console. Cached data was ~760 rows at the time, so the
+delay was not the in-memory pass in `server/feed/view.ts` straining.
+
+The message is the useful clue if it recurs: `app/utils/errorMessage.ts`
+stringifies `statusMessage`, so a literal `undefined` means the server returned an
+error carrying none — i.e. an unhandled throw surfacing as a bare 500 rather than
+one of the `createError` paths the routes use. Check the Nitro server log rather
+than the browser console.
+
+## Follow-ups applied after completion
+
+- `UPagination` was wired to a non-existent `pageCount` prop (it takes
+  `itemsPerPage`, default 10), so pagers derived their page count as if every
+  response held 10 items. The sliding sibling window hid this on page 1.
+- `grid` mode reserved its image slot unconditionally, putting a placeholder on
+  every card of a view where nothing has an image; `ItemList` now decides per view.
+- The toolbar/pager/list trio moved into `app/components/items/ItemView.vue`,
+  which also gained a top pager and an in-view Refresh button; the layout switch
+  became three icon buttons rather than a select.
+- Side-by-side subfeed columns became fixed-width (they compressed instead of
+  scrolling), and their counts now appear only when a filter is narrowing them.
