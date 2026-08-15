@@ -19,11 +19,13 @@ platform concerns.
 | 05  | Subfeeds                      | 03, 04b    |
 | 06  | Composed feeds                | 03, 05     |
 | 07  | Shared content views          | 02, 03     |
+| 07b | Tag include/exclude           | 07         |
 | 08  | Bookmarks                     | 07         |
 | 09  | Managed sources from config   | 03, 05     |
 | 10  | Export & import               | 03, 06, 08 |
 | 11  | Settings & theming            | 00         |
 | 12  | Feed generator (no-RSS sites) | 02, 03     |
+| 13  | Homepage                      | 07, 08     |
 
 ---
 
@@ -89,6 +91,15 @@ image-led layouts have something to show. Also settles what 05 and 06 deferred
 here: an `item_subfeeds` join so a subfeed view (and a subfeed-narrowed feed
 member) shows only its own items, and sibling subfeeds side-by-side as columns.
 
+## 07b — Tag include/exclude
+
+Extend 07's include-only tag filter so a tag can also be **excluded** — muting
+"Sport" rather than only selecting for it. Split out from 07's follow-up fixes
+because it is the one change there that touches the query contract itself: the
+schema field, the URL format, the view-layer predicate and the toolbar control
+move together. Inclusion stays AND, exclusion is OR, and exclusion wins on a tag
+set to both.
+
 ## 08 — Bookmarks
 
 Manage a list of bookmarks with filtering, automatic sorting, and manual
@@ -126,7 +137,10 @@ back, with validation and sensible merge/replace behaviour.
 ## 11 — Settings & theming
 
 App settings (default page size, search cap, …) plus light (beige) and dark
-(dark brown) themes with persisted user preference.
+(dark brown) themes with persisted user preference. Also the **editorial
+layout's column ratio**: issue 07 hard-codes an even three-column split, and the
+whole point of that layout is uneven emphasis, so the ratio (33/33/33, 25/50/25,
+…) belongs in settings alongside the default layout mode.
 
 ## 12 — Feed generator (no-RSS sites)
 
@@ -138,3 +152,11 @@ date optional. A second parser behind the engine's existing
 composed feeds and the issue 07 views all apply unchanged. A selector-preview
 endpoint makes authoring selectors tractable. No headless browser, and no
 article-content extraction — listing metadata only.
+
+## 13 — Homepage
+
+Give the homepage a purpose — it is currently a title and a tagline, so the first
+thing the app shows says nothing about what is in it. Placeholder issue: the
+direction (dashboard vs. reading surface) is deliberately undecided, and the
+issue file records the questions to settle first, including whether "all items
+across every source" should become a real view kind.
