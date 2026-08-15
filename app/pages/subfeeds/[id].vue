@@ -6,6 +6,7 @@ useHead({ title: 'Subfeed · Knowbook' })
 
 const subfeedsStore = useSubfeedsStore()
 const sourcesStore = useSourcesStore()
+const toast = useToast()
 
 const { data: subfeed } = await useAsyncData(`subfeed-${id}`, () =>
   subfeedsStore.fetchOne(id),
@@ -14,6 +15,10 @@ const { data: source } = await useAsyncData(`subfeed-${id}-source`, () =>
   subfeed.value ? sourcesStore.fetchOne(subfeed.value.sourceId) : undefined,
 )
 
+const itemView = useItemView(
+  { kind: 'subfeed', id },
+  { refresh: () => subfeedsStore.refresh(id) },
+)
 const {
   query,
   mode,
@@ -25,8 +30,11 @@ const {
   setPage,
   setMode,
   searchDeep,
+  refresh,
+  refreshing,
+  canRefresh,
   reload,
-} = useItemView({ kind: 'subfeed', id })
+} = itemView
 
 await useAsyncData(`subfeed-items-${id}`, () => reload())
 
@@ -51,20 +59,51 @@ const effectiveEntries = computed(() =>
 function isOverride(key: string): boolean {
   return !!subfeed.value?.queryParams && key in subfeed.value.queryParams
 }
+
+async function onRefresh() {
+  const summary = await refresh()
+  toast.add(
+    summary
+      ? {
+          title: 'Subfeed refreshed',
+          description: `${summary.seen} items seen, ${summary.inserted} new, ${summary.updated} updated.`,
+          color: 'success',
+        }
+      : {
+          title: 'Refresh failed',
+          description: subfeedsStore.error ?? undefined,
+          color: 'error',
+        },
+  )
+}
 </script>
 
 <template>
   <div class="flex flex-col gap-4">
     <template v-if="subfeed && source">
+      <AppBackLink
+        :to="`/sources/${source.id}/subfeeds`"
+        :label="`${source.title} subfeeds`"
+      />
+
       <div class="flex flex-col gap-2">
-        <div>
-          <h1 class="text-xl font-semibold">{{ subfeed.name }}</h1>
-          <p class="text-sm text-muted">
-            <NuxtLink :to="`/sources/${source.id}/subfeeds`" class="underline">
-              {{ source.title }}
-            </NuxtLink>
-            · <span class="break-all">{{ source.url }}</span>
-          </p>
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <h1 class="text-xl font-semibold">{{ subfeed.name }}</h1>
+            <p class="text-sm text-muted">
+              <NuxtLink :to="`/sources/${source.id}/items`" class="underline">
+                {{ source.title }}
+              </NuxtLink>
+              · <span class="break-all">{{ source.url }}</span>
+            </p>
+          </div>
+          <UButton
+            label="Parent items"
+            icon="i-ph-newspaper"
+            color="neutral"
+            variant="subtle"
+            :to="`/sources/${source.id}/items`"
+          />
         </div>
         <ul v-if="effectiveEntries.length" class="flex flex-col gap-1 text-sm">
           <li
@@ -81,33 +120,22 @@ function isOverride(key: string): boolean {
         </ul>
       </div>
 
-      <ItemsItemViewToolbar
-        v-if="view"
-        :facets="view.facets"
+      <ItemsItemView
+        :view="view"
         :query="query"
         :mode="mode"
-        @patch="patch"
-        @update:mode="setMode"
-      />
-
-      <ItemsItemList
-        :items="view?.items ?? []"
-        :mode="mode"
+        :paginated="paginated"
         :source-titles="sourceTitles"
         :loading="loading"
         :error="error"
-      />
-
-      <ItemsItemPager
-        v-if="view"
-        :total="view.total"
-        :page="view.page"
-        :page-size="view.pageSize"
-        :has-query="!!query.q"
-        :paginated="paginated"
         :search-meta="searchMeta"
+        :can-refresh="canRefresh"
+        :refreshing="refreshing"
+        @patch="patch"
+        @update:mode="setMode"
         @update:page="setPage"
         @search-deep="searchDeep"
+        @refresh="onRefresh"
       />
     </template>
     <UAlert v-else color="error" variant="subtle" title="Subfeed not found">

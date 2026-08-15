@@ -27,6 +27,7 @@ async function onSubmit(payload: SourceCreateInput) {
 
 <template>
   <div class="flex flex-col gap-4 max-w-lg">
+    <AppBackLink to="/sources" label="sources" />
     <h1 class="text-xl font-semibold">Add source</h1>
     <SourcesSourceForm :submitting="submitting" @submit="onSubmit" />
   </div>

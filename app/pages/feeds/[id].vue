@@ -14,6 +14,10 @@ const { data: feed } = await useAsyncData(`feed-${id}`, () =>
   store.fetchOne(id),
 )
 
+const itemView = useItemView(
+  { kind: 'feed', id },
+  { refresh: () => store.refresh(id) },
+)
 const {
   query,
   mode,
@@ -25,8 +29,11 @@ const {
   setPage,
   setMode,
   searchDeep,
+  refresh,
+  refreshing,
+  canRefresh,
   reload: reloadItems,
-} = useItemView({ kind: 'feed', id })
+} = itemView
 
 await useAsyncData(`feed-items-${id}`, () => reloadItems())
 
@@ -46,6 +53,14 @@ function memberLabel(member: FeedMemberDetail): string {
   return member.subfeed
     ? `${member.source.title} → ${member.subfeed.name}`
     : member.source.title
+}
+
+// A member's manage page: the subfeeds list for a narrowed member, the source
+// edit form for a whole-source one.
+function memberManageLink(member: FeedMemberDetail): string {
+  return member.subfeed
+    ? `/sources/${member.source.id}/subfeeds`
+    : `/sources/${member.source.id}/edit`
 }
 
 // `null` means "add".
@@ -106,28 +121,28 @@ async function confirmRemove() {
 }
 
 async function onRefresh() {
-  const summary = await store.refresh(id)
-
-  if (summary) {
-    toast.add({
-      title: 'Feed refreshed',
-      description: `${summary.members.length} members · ${summary.seen} items seen, ${summary.inserted} new, ${summary.updated} updated.`,
-      color: 'success',
-    })
-    await reloadItems()
-  } else {
-    toast.add({
-      title: 'Refresh failed',
-      description: store.error ?? undefined,
-      color: 'error',
-    })
-  }
+  const summary = await refresh()
+  toast.add(
+    summary
+      ? {
+          title: 'Feed refreshed',
+          description: `${summary.seen} items seen, ${summary.inserted} new, ${summary.updated} updated.`,
+          color: 'success',
+        }
+      : {
+          title: 'Refresh failed',
+          description: store.error ?? undefined,
+          color: 'error',
+        },
+  )
 }
 </script>
 
 <template>
   <div class="flex flex-col gap-4">
     <template v-if="feed">
+      <AppBackLink to="/feeds" label="feeds" />
+
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-xl font-semibold">{{ feed.name }}</h1>
@@ -135,16 +150,6 @@ async function onRefresh() {
             {{ members.length }}
             {{ members.length === 1 ? 'member' : 'members' }}
           </p>
-        </div>
-        <div class="flex gap-2">
-          <UButton
-            label="Refresh feed"
-            icon="i-ph-arrow-clockwise"
-            color="neutral"
-            variant="subtle"
-            @click="onRefresh"
-          />
-          <UButton label="Add member" icon="i-ph-plus" @click="openAdd" />
         </div>
       </div>
 
@@ -155,66 +160,61 @@ async function onRefresh() {
         :title="store.error"
       />
 
-      <div v-if="members.length" class="flex flex-col gap-3">
-        <UCard v-for="member in members" :key="member.id">
-          <div class="flex items-start justify-between gap-4">
-            <div class="flex flex-col gap-1">
-              <h2 class="font-medium text-highlighted">
-                {{ memberLabel(member) }}
-              </h2>
-              <p class="text-sm text-muted break-all">
-                {{ member.source.url }}
-              </p>
-            </div>
-            <UButton
-              icon="i-ph-trash"
-              color="error"
-              variant="ghost"
-              aria-label="Remove member"
-              @click="pendingRemoveId = member.id"
-            />
-          </div>
-        </UCard>
+      <!--
+        Chips rather than a card per member: a member is a title, and its URL is
+        not something read here — it is one click away on the manage page the
+        chip links to.
+      -->
+      <div class="flex flex-wrap items-center gap-2">
+        <UFieldGroup v-for="member in members" :key="member.id" size="sm">
+          <UButton
+            :label="memberLabel(member)"
+            :to="memberManageLink(member)"
+            :icon="member.subfeed ? 'i-ph-stack' : 'i-ph-rss'"
+            color="neutral"
+            variant="subtle"
+          />
+          <UButton
+            icon="i-ph-x"
+            color="neutral"
+            variant="subtle"
+            :aria-label="`Remove ${memberLabel(member)}`"
+            @click="pendingRemoveId = member.id"
+          />
+        </UFieldGroup>
+        <UButton
+          label="Add member"
+          icon="i-ph-plus"
+          size="sm"
+          variant="outline"
+          @click="openAdd"
+        />
       </div>
-      <UCard v-else-if="noMembersYet">
+
+      <UCard v-if="noMembersYet">
         <p class="text-muted">
           No members yet. Add a source (optionally narrowed to a subfeed) to
           start reading it here.
         </p>
       </UCard>
 
-      <div class="flex flex-col gap-2">
-        <h2 class="font-medium text-highlighted">Items</h2>
-
-        <ItemsItemViewToolbar
-          v-if="view"
-          :facets="view.facets"
-          :query="query"
-          :mode="mode"
-          @patch="patch"
-          @update:mode="setMode"
-        />
-
-        <ItemsItemList
-          :items="view?.items ?? []"
-          :mode="mode"
-          :source-titles="sourceTitles"
-          :loading="loading"
-          :error="itemsError"
-        />
-
-        <ItemsItemPager
-          v-if="view"
-          :total="view.total"
-          :page="view.page"
-          :page-size="view.pageSize"
-          :has-query="!!query.q"
-          :paginated="paginated"
-          :search-meta="searchMeta"
-          @update:page="setPage"
-          @search-deep="searchDeep"
-        />
-      </div>
+      <ItemsItemView
+        :view="view"
+        :query="query"
+        :mode="mode"
+        :paginated="paginated"
+        :source-titles="sourceTitles"
+        :loading="loading"
+        :error="itemsError"
+        :search-meta="searchMeta"
+        :can-refresh="canRefresh"
+        :refreshing="refreshing"
+        @patch="patch"
+        @update:mode="setMode"
+        @update:page="setPage"
+        @search-deep="searchDeep"
+        @refresh="onRefresh"
+      />
 
       <UModal v-model:open="addModalOpen" title="Add member">
         <template #content>

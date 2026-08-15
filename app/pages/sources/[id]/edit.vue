@@ -35,7 +35,28 @@ async function onSubmit(payload: SourceCreateInput) {
 <template>
   <div class="flex flex-col gap-4 max-w-lg">
     <template v-if="source">
-      <h1 class="text-xl font-semibold">Edit source</h1>
+      <AppBackLink to="/sources" label="sources" />
+      <div class="flex items-start justify-between gap-4">
+        <h1 class="text-xl font-semibold">Edit source</h1>
+        <div class="flex gap-2">
+          <UButton
+            label="Items"
+            icon="i-ph-newspaper"
+            color="neutral"
+            variant="subtle"
+            size="sm"
+            :to="`/sources/${id}/items`"
+          />
+          <UButton
+            label="Subfeeds"
+            icon="i-ph-stack"
+            color="neutral"
+            variant="subtle"
+            size="sm"
+            :to="`/sources/${id}/subfeeds`"
+          />
+        </div>
+      </div>
       <SourcesSourceForm
         :source="source"
         :submitting="submitting"

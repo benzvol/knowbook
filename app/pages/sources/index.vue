@@ -105,7 +105,7 @@ const columns: TableColumn<SourceListItem>[] = [
   {
     accessorKey: 'url',
     header: 'URL',
-    meta: { class: { th: 'w-2/5', td: 'truncate' } },
+    meta: { class: { th: 'w-1/3', td: 'truncate' } },
     // Long feed URLs are truncated rather than allowed to widen the column;
     // the full value stays available as a tooltip.
     cell: ({ row }) =>
@@ -134,52 +134,66 @@ const columns: TableColumn<SourceListItem>[] = [
   },
   {
     id: 'actions',
-    meta: { class: { th: 'w-16' } },
+    // Wider than the old `w-16`: reading a source's items and managing its
+    // subfeeds are the two things done most often, so they get dedicated
+    // buttons instead of being buried a click deep in the row menu.
+    meta: { class: { th: 'w-32' } },
     cell: ({ row }) =>
-      h(
-        UDropdownMenu,
-        {
-          items: [
-            {
-              label: 'Edit',
-              icon: 'i-ph-pencil',
-              to: `/sources/${row.original.id}/edit`,
-            },
-            {
-              label: 'Items',
-              icon: 'i-ph-newspaper',
-              to: `/sources/${row.original.id}/items`,
-            },
-            {
-              label: row.original.subfeedCount
-                ? `Subfeeds (${row.original.subfeedCount})`
-                : 'Subfeeds',
-              icon: 'i-ph-stack',
-              to: `/sources/${row.original.id}/subfeeds`,
-            },
-            {
-              label: 'Refresh',
-              icon: 'i-ph-arrow-clockwise',
-              onSelect: () => onRefresh(row.original.id),
-            },
-            {
-              label: 'Delete',
-              icon: 'i-ph-trash',
-              color: 'error',
-              onSelect: () => {
-                pendingDeleteId.value = row.original.id
+      h('div', { class: 'flex items-center justify-end gap-1' }, [
+        h(UButton, {
+          icon: 'i-ph-newspaper',
+          color: 'neutral',
+          variant: 'ghost',
+          to: `/sources/${row.original.id}/items`,
+          title: 'Items',
+          'aria-label': `Items of ${row.original.title}`,
+        }),
+        h(UButton, {
+          icon: 'i-ph-stack',
+          color: 'neutral',
+          variant: 'ghost',
+          to: `/sources/${row.original.id}/subfeeds`,
+          title: row.original.subfeedCount
+            ? `Subfeeds (${row.original.subfeedCount})`
+            : 'Subfeeds',
+          'aria-label': `Subfeeds of ${row.original.title}`,
+          label: row.original.subfeedCount
+            ? String(row.original.subfeedCount)
+            : undefined,
+        }),
+        h(
+          UDropdownMenu,
+          {
+            items: [
+              {
+                label: 'Edit',
+                icon: 'i-ph-pencil',
+                to: `/sources/${row.original.id}/edit`,
               },
-            },
-          ],
-        },
-        () =>
-          h(UButton, {
-            icon: 'i-ph-dots-three-vertical',
-            color: 'neutral',
-            variant: 'ghost',
-            'aria-label': 'Actions',
-          }),
-      ),
+              {
+                label: 'Refresh',
+                icon: 'i-ph-arrow-clockwise',
+                onSelect: () => onRefresh(row.original.id),
+              },
+              {
+                label: 'Delete',
+                icon: 'i-ph-trash',
+                color: 'error',
+                onSelect: () => {
+                  pendingDeleteId.value = row.original.id
+                },
+              },
+            ],
+          },
+          () =>
+            h(UButton, {
+              icon: 'i-ph-dots-three-vertical',
+              color: 'neutral',
+              variant: 'ghost',
+              'aria-label': 'More actions',
+            }),
+        ),
+      ]),
   },
 ]
 

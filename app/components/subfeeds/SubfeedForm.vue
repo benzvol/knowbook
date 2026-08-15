@@ -7,7 +7,14 @@ import {
 import type { PaginationConfig, QueryParams, Subfeed } from '#shared/types'
 
 const props = defineProps<{
+  /** Present only when editing — it also drives the submit-button label. */
   subfeed?: Subfeed
+  /**
+   * Seeds an *add* form without making it an edit, for duplicating an existing
+   * subfeed. Kept separate from `subfeed` so a duplicate doesn't submit as a
+   * change to the subfeed it was copied from.
+   */
+  prefill?: Pick<Subfeed, 'name' | 'queryParams'>
   parentQueryParams?: QueryParams | null
   parentPagination?: PaginationConfig | null
   nameError?: string
@@ -16,8 +23,8 @@ const props = defineProps<{
 const emit = defineEmits<{ submit: [payload: SubfeedCreateInput] }>()
 
 const state = reactive<Partial<SubfeedCreateInput>>({
-  name: props.subfeed?.name,
-  queryParams: props.subfeed?.queryParams ?? null,
+  name: props.subfeed?.name ?? props.prefill?.name,
+  queryParams: props.subfeed?.queryParams ?? props.prefill?.queryParams ?? null,
 })
 
 // The merged result a refresh would actually request: parent overlaid with

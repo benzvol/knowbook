@@ -2,9 +2,8 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { describe, expect, it } from 'vitest'
 
-const { default: SubfeedForm } = await import(
-  '~/components/subfeeds/SubfeedForm.vue'
-)
+const { default: SubfeedForm } =
+  await import('~/components/subfeeds/SubfeedForm.vue')
 
 describe('SubfeedForm', () => {
   it('blocks submit and shows an error when the name is missing', async () => {

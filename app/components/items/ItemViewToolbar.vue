@@ -1,12 +1,20 @@
 <script setup lang="ts">
 import type { ItemQueryInput } from '#shared/schemas/itemQuery'
 import type { ItemFacets } from '#shared/types'
-import { ITEM_VIEW_MODES, type ItemViewMode } from '~/composables/useItemView'
+import type { ItemViewMode } from '~/composables/useItemView'
 
 const props = defineProps<{
   facets: ItemFacets
   query: ItemQueryInput
   mode: ItemViewMode
+  /**
+   * The page size actually in effect when the query names none — the server's
+   * `pageSizeSetting()` value, echoed back on the response. Shown in the
+   * placeholder so "Default" states what it means.
+   */
+  defaultPageSize?: number
+  canRefresh?: boolean
+  refreshing?: boolean
 }>()
 
 // Emits query patches; holds no fetch logic itself — `useItemView` decides
@@ -14,6 +22,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   patch: [partial: Partial<ItemQueryInput>]
   'update:mode': [mode: ItemViewMode]
+  refresh: []
 }>()
 
 const SEARCH_DEBOUNCE_MS = 300
@@ -49,12 +58,29 @@ const SORT_OPTIONS = [
   { label: 'Last fetched', value: 'fetched' },
 ]
 
-const PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
+// `0` is a sentinel for "no explicit size", mapped back to `undefined` before
+// emitting — `itemQuerySchema.pageSize` is `min(1)` and would reject a literal
+// 0. Without this option a chosen size could never be cleared.
+const DEFAULT_PAGE_SIZE_VALUE = 0
 
-const MODE_OPTIONS = ITEM_VIEW_MODES.map((value) => ({
-  label: value[0]!.toUpperCase() + value.slice(1),
-  value,
-}))
+const pageSizeOptions = computed(() => [
+  {
+    label: props.defaultPageSize
+      ? `Default (${props.defaultPageSize})`
+      : 'Default',
+    value: DEFAULT_PAGE_SIZE_VALUE,
+  },
+  ...[10, 25, 50, 100].map((n) => ({ label: String(n), value: n })),
+])
+
+// Three options never warranted a dropdown. Icons carry the meaning, with a
+// tooltip and aria-label for the name. (`i-ph-columns` is only an icon name —
+// issue 07's naming rule is about not calling the *layout* "columns".)
+const MODE_BUTTONS: { mode: ItemViewMode; icon: string; label: string }[] = [
+  { mode: 'list', icon: 'i-ph-list', label: 'List' },
+  { mode: 'grid', icon: 'i-ph-grid-four', label: 'Grid' },
+  { mode: 'editorial', icon: 'i-ph-columns', label: 'Editorial' },
+]
 
 function onTagsChange(tags: string[]) {
   emit('patch', { tags })
@@ -69,11 +95,9 @@ function onSortChange(value: string) {
 }
 
 function onPageSizeChange(value: number) {
-  emit('patch', { pageSize: value })
-}
-
-function onModeChange(value: string) {
-  emit('update:mode', value as ItemViewMode)
+  emit('patch', {
+    pageSize: value === DEFAULT_PAGE_SIZE_VALUE ? undefined : value,
+  })
 }
 </script>
 
@@ -88,7 +112,7 @@ function onModeChange(value: string) {
       />
     </UFormField>
 
-    <UFormField label="Tags" description="Shows items with all selected tags.">
+    <UFormField label="Tags">
       <USelectMenu
         :model-value="query.tags"
         :items="facets.tags"
@@ -123,21 +147,42 @@ function onModeChange(value: string) {
 
     <UFormField label="Page size">
       <USelect
-        :model-value="query.pageSize"
-        :items="PAGE_SIZE_OPTIONS"
-        placeholder="Default"
-        class="w-24"
+        :model-value="query.pageSize ?? 0"
+        :items="pageSizeOptions"
+        class="w-36"
         @update:model-value="onPageSizeChange"
       />
     </UFormField>
 
     <UFormField label="Layout">
-      <USelect
-        :model-value="mode"
-        :items="MODE_OPTIONS"
-        class="w-32"
-        @update:model-value="onModeChange"
-      />
+      <!--
+        Native `title` rather than UTooltip: it needs no app-level provider
+        (so the component mounts standalone in tests) and gives the same hover
+        hint, with `aria-label` carrying the name for assistive tech.
+      -->
+      <UFieldGroup>
+        <UButton
+          v-for="option in MODE_BUTTONS"
+          :key="option.mode"
+          :icon="option.icon"
+          :title="option.label"
+          :aria-label="option.label"
+          :variant="mode === option.mode ? 'solid' : 'outline'"
+          color="neutral"
+          @click="emit('update:mode', option.mode)"
+        />
+      </UFieldGroup>
     </UFormField>
+
+    <UButton
+      v-if="canRefresh"
+      class="ml-auto"
+      label="Refresh"
+      icon="i-ph-arrow-clockwise"
+      color="neutral"
+      variant="subtle"
+      :loading="refreshing"
+      @click="emit('refresh')"
+    />
   </div>
 </template>

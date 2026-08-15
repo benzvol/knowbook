@@ -106,7 +106,7 @@ describe('sources list page', () => {
     ])
   })
 
-  it('shows a subfeed count in the row menu when present', async () => {
+  it('gives each row dedicated Items and Subfeeds buttons, with a subfeed count when present', async () => {
     fetchMock.mockImplementation((url: string) => {
       if (url === '/api/sources') {
         return Promise.resolve([
@@ -119,15 +119,29 @@ describe('sources list page', () => {
     const wrapper = await mountSuspended(SourcesIndexPage)
     await wrapper.vm.$nextTick()
 
+    const links = wrapper.findAll('a').map((a) => a.attributes('href'))
+    expect(links).toContain('/sources/1/items')
+    expect(links).toContain('/sources/1/subfeeds')
+    expect(links).toContain('/sources/2/items')
+
+    const titles = wrapper.findAll('a').map((a) => a.attributes('title'))
+    expect(titles).toContain('Subfeeds (2)')
+    expect(titles).toContain('Subfeeds')
+  })
+
+  it('keeps the less-frequent actions in the row menu', async () => {
+    const wrapper = await mountSuspended(SourcesIndexPage)
+    await wrapper.vm.$nextTick()
+
     // The dropdown's items are portalled and only rendered once opened, so
     // assert on the `items` prop rather than the rendered text.
-    const menus = wrapper.findAllComponents({ name: 'UDropdownMenu' })
-    const labelsByMenu = menus.map((menu) =>
-      (menu.props('items') as { label: string }[]).map((i) => i.label),
-    )
+    const labels = (
+      wrapper
+        .findAllComponents({ name: 'UDropdownMenu' })[0]!
+        .props('items') as { label: string }[]
+    ).map((i) => i.label)
 
-    expect(labelsByMenu[0]).toContain('Subfeeds (2)')
-    expect(labelsByMenu[1]).toContain('Subfeeds')
+    expect(labels).toEqual(['Edit', 'Refresh', 'Delete'])
   })
 
   it('shows the no-sources-yet message distinct from no-matches', async () => {
