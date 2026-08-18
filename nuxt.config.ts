@@ -46,6 +46,11 @@ export default defineNuxtConfig({
     serverBundle: {
       collections: ['ph'],
     },
+    // Bundle the icons used in the app for the browser too. Without this,
+    // every client-side icon relies on a runtime request to the local API.
+    clientBundle: {
+      scan: true,
+    },
   },
 
   typescript: {
