@@ -26,6 +26,7 @@ platform concerns.
 | 11  | Settings & theming            | 00         |
 | 12  | Feed generator (no-RSS sites) | 02, 03     |
 | 13  | Homepage                      | 07, 08     |
+| 14  | Email digests                  | 05, 06, 11 |
 
 ---
 
@@ -160,3 +161,9 @@ thing the app shows says nothing about what is in it. Placeholder issue: the
 direction (dashboard vs. reading surface) is deliberately undecided, and the
 issue file records the questions to settle first, including whether "all items
 across every source" should become a real view kind.
+
+## 14 — Email digests
+
+Send configurable daily, weekly, and monthly email digests for sources, subfeeds,
+and composed feeds. Integrate the Resend SDK for delivery, and include the new
+items from each selected feed in each scheduled digest.
