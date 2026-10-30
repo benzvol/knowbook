@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { MAX_PAGE_SIZE, MIN_PAGE_SIZE } from './settings'
 
 // Normalises a query param that may arrive as a single string, a
 // comma-separated string, or (when repeated) an array of strings, into one
@@ -30,7 +31,12 @@ export const itemQuerySchema = z.object({
     .default([]),
   sort: z.enum(['newest', 'oldest', 'title', 'fetched']).default('newest'),
   page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(200).optional(),
+  pageSize: z.coerce
+    .number()
+    .int()
+    .min(MIN_PAGE_SIZE)
+    .max(MAX_PAGE_SIZE)
+    .optional(),
 })
 
 // A search-until-found with no `q` is meaningless, so this narrows `q` to

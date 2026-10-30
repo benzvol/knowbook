@@ -1,8 +1,9 @@
 import type { FeedTarget } from '#shared/types'
+import { DEFAULT_MAX_PAGES } from '#shared/schemas/settings'
 import { fetchFeed, type FetchFeedOptions } from './fetch'
 import { parseFeed, type ParsedItem } from './parse'
 
-export const DEFAULT_MAX_PAGES = 5
+export { DEFAULT_MAX_PAGES }
 
 export function buildPageUrl(target: FeedTarget, page: number): string {
   const url = new URL(target.url)
