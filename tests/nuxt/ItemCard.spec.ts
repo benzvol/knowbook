@@ -53,6 +53,30 @@ describe('ItemCard', () => {
     expect(withoutLink.text()).toContain('A headline')
   })
 
+  it('formats published dates as abbreviated month, day, year, and time', async () => {
+    const wrapper = await mountSuspended(ItemCard, {
+      props: {
+        item: makeItem({ publishedAt: new Date('2024-01-05T00:00:00.000Z') }),
+        mode: 'list',
+      },
+    })
+
+    expect(wrapper.text()).toContain('Jan 05, 2024')
+    expect(wrapper.text()).toContain('00:00')
+  })
+
+  it('shows a description as the lead when the item has a title', async () => {
+    const wrapper = await mountSuspended(ItemCard, {
+      props: {
+        item: makeItem({ title: 'A headline', description: 'A short lead.' }),
+        mode: 'list',
+      },
+    })
+
+    expect(wrapper.text()).toContain('A headline')
+    expect(wrapper.text()).toContain('A short lead.')
+  })
+
   it('shows a placeholder block instead of a shorter card in grid mode when the view reserves media', async () => {
     const wrapper = await mountSuspended(ItemCard, {
       props: {

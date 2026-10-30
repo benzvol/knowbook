@@ -33,7 +33,15 @@ const showImage = computed(() => !!props.item.imageUrl && !imageFailed.value)
 
 const publishedLabel = computed(() =>
   props.item.publishedAt
-    ? new Date(props.item.publishedAt).toLocaleString()
+    ? new Date(props.item.publishedAt).toLocaleDateString('en-US', {
+        month: 'short',
+        day: '2-digit',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hourCycle: 'h23',
+        timeZone: 'UTC',
+      })
     : undefined,
 )
 </script>
@@ -114,6 +122,13 @@ const publishedLabel = computed(() =>
             @click="emit('toggle-bookmark')"
           />
         </div>
+
+        <p
+          v-if="item.title && item.description?.trim()"
+          class="line-clamp-3 text-sm text-toned"
+        >
+          {{ item.description }}
+        </p>
 
         <p v-if="sourceTitle || publishedLabel" class="text-sm text-muted">
           <template v-if="sourceTitle">{{ sourceTitle }}</template>
