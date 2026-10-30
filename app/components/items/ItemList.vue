@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import type { Item } from '#shared/types'
 import type { ItemViewMode } from '~/composables/useItemView'
+const settings = useState<{ editorialColumnRatio: number[] }>(
+  'app-settings',
+  () => ({ editorialColumnRatio: [1, 1, 1] }),
+)
 
 const props = defineProps<{
   items: Item[]
@@ -35,6 +39,16 @@ const emit = defineEmits<{
 // reasoning doesn't apply and every card would carry a pointless grey box, so
 // the slot is dropped for the whole view rather than per card.
 const anyImage = computed(() => props.items.some((item) => !!item.imageUrl))
+const tracks = computed(() => {
+  // The wider center track leads with the newest item, the left track follows
+  // with the second newest, and the right track takes the third sequence.
+  const sequenceByColumn = [1, 0, 2]
+  return [0, 1, 2].map((column) => {
+    return props.items.flatMap((item, itemIndex) =>
+      itemIndex % 3 === sequenceByColumn[column] ? [{ item, itemIndex }] : [],
+    )
+  })
+})
 
 // Empty and loading states are shared across modes, not re-implemented per
 // mode — switching layout never changes what "no items" or "loading" looks
@@ -48,10 +62,9 @@ const containerClass = computed(() => {
     case 'grid':
       return 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'
     case 'editorial':
-      // CSS `columns`, not a JS masonry library: images keep their natural
-      // aspect ratio and text lengths differ, so cards settle into uneven
-      // column heights on their own.
-      return 'columns-1 gap-4 sm:columns-2 lg:columns-3 [&>*]:mb-4'
+      // At desktop, every third item goes into each vertical track. Below
+      // desktop the explicit order restores row-like reading order.
+      return 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-[var(--editorial-columns)]'
     default:
       return 'flex flex-col gap-2'
   }
@@ -66,6 +79,34 @@ const containerClass = computed(() => {
   <UCard v-else-if="items.length === 0">
     <p class="text-muted">No items match this view.</p>
   </UCard>
+  <div
+    v-else-if="props.mode === 'editorial' && !singleColumn"
+    :class="containerClass"
+    :style="{
+      '--editorial-columns': settings.editorialColumnRatio
+        .map((weight) => `minmax(0, ${weight}fr)`)
+        .join(' '),
+    }"
+  >
+    <div
+      v-for="(track, index) in tracks"
+      :key="index"
+      class="contents lg:flex lg:flex-col lg:gap-4"
+    >
+      <ItemsItemCard
+        v-for="entry in track"
+        :key="entry.item.id"
+        :item="entry.item"
+        :style="{ order: entry.itemIndex }"
+        :mode="mode"
+        :reserve-media="anyImage"
+        :source-title="sourceTitles?.get(entry.item.sourceId)"
+        :bookmarkable="!!bookmarkedItemIds"
+        :bookmarked="bookmarkedItemIds?.has(entry.item.id)"
+        @toggle-bookmark="emit('toggle-bookmark', entry.item.id)"
+      />
+    </div>
+  </div>
   <div v-else :class="containerClass">
     <ItemsItemCard
       v-for="item in items"

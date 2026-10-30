@@ -58,4 +58,21 @@ describe('ItemList', () => {
 
     expect(wrapper.text()).toContain('No items match this view.')
   })
+
+  it('distributes editorial items every third item across the three tracks', async () => {
+    const items = Array.from({ length: 8 }, (_, index) =>
+      makeItem({ id: index + 1, title: `Item ${index + 1}` }),
+    )
+    const wrapper = await mountSuspended(ItemList, {
+      props: { mode: 'editorial', items },
+    })
+
+    const tracks = wrapper.findAll('.contents')
+    expect(tracks).toHaveLength(3)
+    expect(tracks.map((track) => track.text())).toEqual([
+      'Item 2Item 5Item 8',
+      'Item 1Item 4Item 7',
+      'Item 3Item 6',
+    ])
+  })
 })
