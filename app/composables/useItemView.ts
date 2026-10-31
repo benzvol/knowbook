@@ -33,6 +33,7 @@ export interface UseItemViewOptions {
    * shared success message covers them.
    */
   refresh?: () => Promise<RefreshCounts | undefined>
+  visit?: () => Promise<unknown>
 }
 
 /**
@@ -119,6 +120,7 @@ export function useItemView(
   // Refreshing from inside the view saves the round trip through the sources
   // list that reading a stale view otherwise required.
   const refreshing = ref(false)
+  const visitError = ref<string | null>(null)
   const canRefresh = computed(() => !!opts.refresh)
 
   async function refresh(): Promise<RefreshCounts | undefined> {
@@ -135,6 +137,21 @@ export function useItemView(
     }
   }
 
+  // Entry registration is browser-only. SSR has already rendered the cached
+  // view; the route key gives reload/back/ID navigation a fresh lifecycle.
+  onMounted(async () => {
+    if (!opts.visit) return
+    refreshing.value = true
+    try {
+      const result = await opts.visit() as { summary?: RefreshCounts | null }
+      if (result.summary) await load()
+    } catch (cause) {
+      visitError.value = cause instanceof Error ? cause.message : 'Automatic refresh failed'
+    } finally {
+      refreshing.value = false
+    }
+  })
+
   return {
     query,
     mode,
@@ -148,6 +165,7 @@ export function useItemView(
     searchDeep,
     refresh,
     refreshing,
+    visitError,
     canRefresh,
     reload: load,
   }

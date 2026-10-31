@@ -17,7 +17,7 @@ const { data: feed } = await useAsyncData(`feed-${id}`, () =>
 
 const itemView = useItemView(
   { kind: 'feed', id },
-  { refresh: () => store.refresh(id) },
+  { refresh: () => store.refresh(id), visit: () => $fetch(`/api/feeds/${id}/visit`, { method: 'POST' }) },
 )
 const {
   query,
@@ -33,6 +33,7 @@ const {
   refresh,
   refreshing,
   canRefresh,
+  visitError,
   reload: reloadItems,
 } = itemView
 
@@ -204,7 +205,7 @@ async function onRefresh() {
         :paginated="paginated"
         :source-titles="sourceTitles"
         :loading="loading"
-        :error="itemsError"
+        :error="itemsError ?? visitError"
         :search-meta="searchMeta"
         :can-refresh="canRefresh"
         :refreshing="refreshing"

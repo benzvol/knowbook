@@ -18,10 +18,17 @@ describe('settings schemas', () => {
       searchMaxPages: 5,
       theme: 'light',
       editorialColumnRatio: [1, 1, 1],
+      autoRefreshThresholdMinutes: 60,
     })
     expect(appSettingsSchema.safeParse(defaultAppSettings).success).toBe(true)
   })
   it('validates bounds and strict nonempty partial updates', () => {
+    for (const value of [1, 5, 10, 30, 60, 180, 360, 720, 1440]) {
+      expect(settingsUpdateSchema.safeParse({ autoRefreshThresholdMinutes: value }).success).toBe(true)
+    }
+    for (const value of [0, 1441, 1.5, NaN]) {
+      expect(settingsUpdateSchema.safeParse({ autoRefreshThresholdMinutes: value }).success).toBe(false)
+    }
     expect(settingsUpdateSchema.safeParse({ pageSize: 1 }).success).toBe(true)
     expect(settingsUpdateSchema.safeParse({ pageSize: 201 }).success).toBe(
       false,
@@ -62,6 +69,7 @@ describe('stored settings fallback', () => {
       searchMaxPages: 5,
       theme: 'dark',
       editorialColumnRatio: [1, 1, 1],
+      autoRefreshThresholdMinutes: 60,
     })
   })
 })

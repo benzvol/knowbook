@@ -17,7 +17,7 @@ const { data: source } = await useAsyncData(`subfeed-${id}-source`, () =>
 
 const itemView = useItemView(
   { kind: 'subfeed', id },
-  { refresh: () => subfeedsStore.refresh(id) },
+  { refresh: () => subfeedsStore.refresh(id), visit: () => $fetch(`/api/subfeeds/${id}/visit`, { method: 'POST' }) },
 )
 const {
   query,
@@ -33,6 +33,7 @@ const {
   refresh,
   refreshing,
   canRefresh,
+  visitError,
   reload,
 } = itemView
 
@@ -127,7 +128,7 @@ async function onRefresh() {
         :paginated="paginated"
         :source-titles="sourceTitles"
         :loading="loading"
-        :error="error"
+        :error="error ?? visitError"
         :search-meta="searchMeta"
         :can-refresh="canRefresh"
         :refreshing="refreshing"

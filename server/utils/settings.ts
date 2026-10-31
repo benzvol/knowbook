@@ -23,11 +23,15 @@ export function themeSetting(): AppSettings['theme'] {
 export function editorialColumnRatioSetting(): [number, number, number] {
   return storedSetting('editorialColumnRatio') as [number, number, number]
 }
+export function autoRefreshThresholdMinutesSetting(): number {
+  return storedSetting('autoRefreshThresholdMinutes')
+}
 export function allAppSettings(): AppSettings {
   return {
     pageSize: pageSizeSetting(),
     searchMaxPages: searchMaxPagesSetting(),
     theme: themeSetting(),
     editorialColumnRatio: editorialColumnRatioSetting(),
+    autoRefreshThresholdMinutes: autoRefreshThresholdMinutesSetting(),
   }
 }

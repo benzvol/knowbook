@@ -203,6 +203,7 @@ function onPageSizeChange(value: number) {
       color="neutral"
       variant="subtle"
       :loading="refreshing"
+      :disabled="refreshing"
       @click="emit('refresh')"
     />
   </div>

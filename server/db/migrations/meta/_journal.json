@@ -36,6 +36,13 @@
       "when": 1786811140960,
       "tag": "0004_known_wildside",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1793481600000,
+      "tag": "0005_last_visited_at",
+      "breakpoints": true
     }
   ]
 }

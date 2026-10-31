@@ -2,7 +2,7 @@
   <UApp>
     <NuxtRouteAnnouncer />
     <NuxtLayout>
-      <NuxtPage />
+      <NuxtPage :page-key="(route) => route.path" />
     </NuxtLayout>
   </UApp>
 </template>
@@ -16,6 +16,7 @@ const appSettings = useState(
       searchMaxPages: 5,
       theme: 'light',
       editorialColumnRatio: [1, 1, 1],
+      autoRefreshThresholdMinutes: 60,
     },
 )
 const systemPrefersDark = useState('system-prefers-dark', () => false)

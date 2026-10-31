@@ -32,6 +32,9 @@ export type SettingValue =
   | SettingValue[]
   | { [key: string]: SettingValue }
 
+export type ReadingTargetKind = 'source' | 'subfeed' | 'feed'
+export interface ReadingTargetRef { kind: ReadingTargetKind; id: number }
+
 /**
  * Anything the feed engine can turn into fetchable page URLs: a source, or a
  * subfeed merged over its parent (`subfeedTarget` in `server/feed/target.ts`).

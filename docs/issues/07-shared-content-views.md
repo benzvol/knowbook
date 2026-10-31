@@ -511,7 +511,8 @@ path.
   impossible to derive; a refresh (or a local DB reset) populates it.
 - Settings **UI** for page size, the search cap and the default layout mode —
   issue 11; this issue only reads the keys.
-- Scheduled/background refresh, so views never fetch on load — issue 09+.
+- Scheduled/background refresh. Entry-triggered refresh is specified separately
+  in issue [15](./15-refresh-on-entry.md); this issue only adds manual refresh.
 
 ## Known issues
 

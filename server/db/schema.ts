@@ -43,6 +43,7 @@ export const sources = sqliteTable('sources', {
   queryParams: text('query_params', { mode: 'json' }).$type<QueryParams>(),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
+  lastVisitedAt: integer('last_visited_at', { mode: 'timestamp_ms' }),
 })
 
 export const sourceTags = sqliteTable(
@@ -67,6 +68,7 @@ export const subfeeds = sqliteTable('subfeeds', {
   queryParams: text('query_params', { mode: 'json' }).$type<QueryParams>(),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
+  lastVisitedAt: integer('last_visited_at', { mode: 'timestamp_ms' }),
 })
 
 export const feeds = sqliteTable('feeds', {
@@ -74,6 +76,7 @@ export const feeds = sqliteTable('feeds', {
   name: text('name').notNull(),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
+  lastVisitedAt: integer('last_visited_at', { mode: 'timestamp_ms' }),
 })
 
 // Membership of sources (optionally narrowed to a subfeed) within a feed.

@@ -18,7 +18,7 @@ const { data: subfeeds } = await useAsyncData(`source-${id}-subfeeds`, () =>
 
 const itemView = useItemView(
   { kind: 'source', id },
-  { refresh: () => sourcesStore.refresh(id) },
+  { refresh: () => sourcesStore.refresh(id), visit: () => $fetch(`/api/sources/${id}/visit`, { method: 'POST' }) },
 )
 const {
   query,
@@ -34,6 +34,7 @@ const {
   refresh,
   refreshing,
   canRefresh,
+  visitError,
   reload,
 } = itemView
 
@@ -52,6 +53,7 @@ const sourceTitles = computed(
 // per-target store views (`subfeed:N`), not a fourth code path or a
 // per-column query/mode/pager (out of scope: see issue 07 task 12).
 const bySubfeed = ref(false)
+const enteredSubfeeds = new Set<number>()
 
 function subfeedView(subfeedId: number) {
   return itemsStore.views[`subfeed:${subfeedId}`]
@@ -81,8 +83,26 @@ async function reloadSubfeedColumns() {
   )
 }
 
+async function enterSubfeedColumns() {
+  const failures: string[] = []
+  for (const subfeed of subfeeds.value ?? []) {
+    if (enteredSubfeeds.has(subfeed.id)) continue
+    enteredSubfeeds.add(subfeed.id)
+    try {
+      const result = await $fetch<{ summary: unknown }>(`/api/subfeeds/${subfeed.id}/visit`, { method: 'POST' })
+      if (result.summary) await itemsStore.fetchItems({ kind: 'subfeed', id: subfeed.id }, query.value)
+    } catch {
+      failures.push(subfeed.name)
+    }
+  }
+  if (failures.length) toast.add({ title: 'Some subfeeds could not refresh', description: failures.join(', '), color: 'error' })
+}
+
 watch(bySubfeed, (enabled) => {
-  if (enabled) reloadSubfeedColumns()
+  if (enabled) {
+    void enterSubfeedColumns()
+    void reloadSubfeedColumns()
+  }
 })
 
 // Re-runs every visible column's fetch whenever the shared query changes —
@@ -92,6 +112,22 @@ watch(query, () => {
 })
 
 async function onRefresh() {
+  if (bySubfeed.value) {
+    let failed = 0
+    let seen = 0
+    let inserted = 0
+    let updated = 0
+    for (const subfeed of subfeeds.value ?? []) {
+      const result = await subfeedsStore.refresh(subfeed.id)
+      if (!result) failed++
+      else { seen += result.seen; inserted += result.inserted; updated += result.updated }
+    }
+    await reloadSubfeedColumns()
+    toast.add(failed
+      ? { title: 'Some subfeeds could not refresh', description: `${failed} subfeed${failed === 1 ? '' : 's'} failed.`, color: 'error' }
+      : { title: 'Subfeeds refreshed', description: `${seen} items seen, ${inserted} new, ${updated} updated.`, color: 'success' })
+    return
+  }
   const summary = await refresh()
   if (summary && bySubfeed.value) await reloadSubfeedColumns()
   toast.add(
@@ -149,7 +185,7 @@ async function onRefresh() {
         :paginated="paginated"
         :source-titles="sourceTitles"
         :loading="loading"
-        :error="error"
+        :error="error ?? visitError"
         :search-meta="searchMeta"
         :can-refresh="canRefresh"
         :refreshing="refreshing"

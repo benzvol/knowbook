@@ -4,6 +4,7 @@ export const DEFAULT_PAGE_SIZE = 25
 export const MIN_PAGE_SIZE = 1
 export const MAX_PAGE_SIZE = 200
 export const DEFAULT_MAX_PAGES = 5
+export const DEFAULT_AUTO_REFRESH_THRESHOLD_MINUTES = 60
 export const DEFAULT_THEME = 'light' as const
 export const DEFAULT_EDITORIAL_COLUMN_RATIO = [1, 1, 1] as const
 
@@ -12,6 +13,7 @@ export const appSettingsSchema = z.object({
   searchMaxPages: z.number().int().positive().safe(),
   theme: z.enum(['light', 'dark', 'system']),
   editorialColumnRatio: z.array(z.number().int().min(1).max(100)).length(3),
+  autoRefreshThresholdMinutes: z.number().int().min(1).max(1440),
 })
 export const settingsUpdateSchema = appSettingsSchema
   .partial()
@@ -26,4 +28,5 @@ export const defaultAppSettings: AppSettings = {
   searchMaxPages: DEFAULT_MAX_PAGES,
   theme: DEFAULT_THEME,
   editorialColumnRatio: [...DEFAULT_EDITORIAL_COLUMN_RATIO],
+  autoRefreshThresholdMinutes: DEFAULT_AUTO_REFRESH_THRESHOLD_MINUTES,
 }

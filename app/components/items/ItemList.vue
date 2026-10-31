@@ -3,7 +3,7 @@ import type { Item } from '#shared/types'
 import type { ItemViewMode } from '~/composables/useItemView'
 const settings = useState<{ editorialColumnRatio: number[] }>(
   'app-settings',
-  () => ({ editorialColumnRatio: [1, 1, 1] }),
+  () => ({ editorialColumnRatio: [1, 1, 1], autoRefreshThresholdMinutes: 60 }),
 )
 
 const props = defineProps<{
@@ -73,10 +73,8 @@ const containerClass = computed(() => {
 
 <template>
   <UAlert v-if="error" color="error" variant="subtle" :title="error" />
-  <UCard v-else-if="loading">
-    <p class="text-muted">Loading…</p>
-  </UCard>
-  <UCard v-else-if="items.length === 0">
+  <p v-if="loading" class="text-sm text-muted" role="status">Loading…</p>
+  <UCard v-if="items.length === 0 && !loading">
     <p class="text-muted">No items match this view.</p>
   </UCard>
   <div
