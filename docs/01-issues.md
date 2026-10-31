@@ -8,25 +8,27 @@ of intent per issue; acceptance criteria and detail live in the issue files.
 Ordering reflects dependencies: foundation first, then domain features, then
 platform concerns.
 
-| #   | Issue                         | Depends on |
-| --- | ----------------------------- | ---------- |
-| 00  | Project scaffolding & tooling | —          |
-| 01  | Persistence & data layer      | 00         |
-| 02  | Feed fetch & parse engine     | 01         |
-| 03  | Source management             | 01, 02     |
-| 04  | Categories, types & tagging   | 03         |
-| 04b | Simplify classification       | 04         |
-| 05  | Subfeeds                      | 03, 04b    |
-| 06  | Composed feeds                | 03, 05     |
-| 07  | Shared content views          | 02, 03     |
-| 07b | Tag include/exclude           | 07         |
-| 08  | Bookmarks                     | 07         |
-| 09  | Managed sources from config   | 03, 05     |
-| 10  | Export & import               | 03, 06, 08 |
-| 11  | Settings & theming            | 00         |
-| 12  | Feed generator (no-RSS sites) | 02, 03     |
-| 13  | Homepage                      | 07, 08     |
-| 14  | Email digests                  | 05, 06, 11 |
+| #   | Issue                          | Depends on     |
+| --- | ------------------------------ | -------------- |
+| 00  | Project scaffolding & tooling  | —              |
+| 01  | Persistence & data layer       | 00             |
+| 02  | Feed fetch & parse engine      | 01             |
+| 03  | Source management              | 01, 02         |
+| 04  | Categories, types & tagging    | 03             |
+| 04b | Simplify classification        | 04             |
+| 05  | Subfeeds                       | 03, 04b        |
+| 06  | Composed feeds                 | 03, 05         |
+| 07  | Shared content views           | 02, 03         |
+| 07b | Tag include/exclude            | 07             |
+| 08  | Bookmarks                      | 07             |
+| 09  | Managed sources from config    | 03, 05         |
+| 10  | Export & import                | 03, 06, 08     |
+| 11  | Settings & theming             | 00             |
+| 12  | Feed generator (no-RSS sites)  | 02, 03         |
+| 13  | Homepage                       | 07, 08         |
+| 14  | Email digests                  | 05, 06, 11     |
+| 15  | Automatic refresh on entry     | 05, 06, 07, 11 |
+| 16  | English/Hungarian i18n & dates | 07, 08, 11     |
 
 ---
 
@@ -167,3 +169,21 @@ across every source" should become a real view kind.
 Send configurable daily, weekly, and monthly email digests for sources, subfeeds,
 and composed feeds. Integrate the Resend SDK for delivery, and include the new
 items from each selected feed in each scheduled digest.
+
+## 15 — Automatic refresh on entry
+
+Automatically refresh source, subfeed, and composed-feed item views on entry
+when time since the previous visit reaches a saved user-defined threshold (or
+no visit is recorded). Default to one hour; allow 1 minute to 24 hours inclusive,
+with common presets and custom whole-minute values in Settings.
+Persist a separate last-visit timestamp per target and update it on every
+entry, while retaining cached content during refresh and preserving manual
+Refresh. Details: [15-refresh-on-entry.md](./issues/15-refresh-on-entry.md).
+
+## 16 — English/Hungarian internationalization & localized dates
+
+Add English and Hungarian UI catalogs and a persisted language choice in
+Settings, applied consistently during SSR and client navigation. Use the same
+locale for shared date/time formatting throughout item and bookmark views,
+keeping stored timestamps locale-independent. Details:
+[16-internationalization.md](./issues/16-internationalization.md).
