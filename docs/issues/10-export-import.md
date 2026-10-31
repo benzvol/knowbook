@@ -5,7 +5,7 @@ description: >-
   Download all persisted Knowbook data from Settings and selectively import a
   versioned JSON file using merge or replace. Before replace, automatically
   download a complete backup of the receiving instance.
-status: todo
+status: done
 dependencies: ["03", "05", "06", "08", "11"]
 affects: [app, server, tests]
 ---
