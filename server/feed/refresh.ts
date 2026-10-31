@@ -35,6 +35,25 @@ export interface RefreshOptions extends PagesOptions {
   database?: DB
 }
 
+const pendingRefreshes = new WeakMap<object, Map<string, Promise<unknown>>>()
+
+function coordinated<T>(database: DB, key: string, work: () => Promise<T>): Promise<T> {
+  let pending = pendingRefreshes.get(database)
+  if (!pending) { pending = new Map(); pendingRefreshes.set(database, pending) }
+  const existing = pending.get(key)
+  if (existing) return existing as Promise<T>
+  const request = work()
+  pending.set(key, request)
+  void request.finally(() => {
+    if (pending?.get(key) === request) pending.delete(key)
+  }).catch(() => {})
+  return request
+}
+
+export function pendingRefresh(target: { kind: 'source' | 'subfeed' | 'feed'; id: number }, database: DB = db): Promise<unknown> | undefined {
+  return pendingRefreshes.get(database)?.get(`${target.kind}:${target.id}`)
+}
+
 // Kept as a separate exported name for backwards compatibility with callers
 // that referred to it before subfeed refresh existed.
 export type RefreshSourceOptions = RefreshOptions
@@ -92,7 +111,7 @@ export async function refreshTarget(
   return { ...counts, matched }
 }
 
-export async function refreshSource(
+async function refreshSourceWork(
   sourceId: number,
   opts: RefreshSourceOptions = {},
 ): Promise<RefreshSummary> {
@@ -111,7 +130,7 @@ export async function refreshSource(
   return { sourceId, ...counts }
 }
 
-export async function refreshSubfeed(
+async function refreshSubfeedWork(
   subfeedId: number,
   opts: RefreshOptions = {},
 ): Promise<SubfeedRefreshSummary> {
@@ -137,7 +156,7 @@ export async function refreshSubfeed(
   return { subfeedId, sourceId: source.id, ...counts }
 }
 
-export async function refreshFeed(
+async function refreshFeedWork(
   feedId: number,
   opts: RefreshOptions = {},
 ): Promise<FeedRefreshSummary> {
@@ -177,4 +196,14 @@ export async function refreshFeed(
   }
 
   return summary
+}
+
+export function refreshSource(id: number, opts: RefreshSourceOptions = {}): Promise<RefreshSummary> {
+  return coordinated(opts.database ?? db, `source:${id}`, () => refreshSourceWork(id, opts))
+}
+export function refreshSubfeed(id: number, opts: RefreshOptions = {}): Promise<SubfeedRefreshSummary> {
+  return coordinated(opts.database ?? db, `subfeed:${id}`, () => refreshSubfeedWork(id, opts))
+}
+export function refreshFeed(id: number, opts: RefreshOptions = {}): Promise<FeedRefreshSummary> {
+  return coordinated(opts.database ?? db, `feed:${id}`, () => refreshFeedWork(id, opts))
 }
