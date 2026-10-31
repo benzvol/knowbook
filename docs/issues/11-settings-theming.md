@@ -5,7 +5,7 @@ description: >-
   Add a settings page for persisted app defaults and appearance, including view
   page size, search depth, light/dark theme preference, and the editorial
   layout's column ratio.
-status: todo
+status: done
 dependencies: ["00", "07"]
 affects: [app, server, tests]
 ---

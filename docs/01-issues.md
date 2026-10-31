@@ -29,6 +29,7 @@ platform concerns.
 | 14  | Email digests                  | 05, 06, 11     |
 | 15  | Automatic refresh on entry     | 05, 06, 07, 11 |
 | 16  | English/Hungarian i18n & dates | 07, 08, 11     |
+| 17  | Responsive layouts             | 03, 05–08, 11  |
 
 ---
 
@@ -187,3 +188,13 @@ Settings, applied consistently during SSR and client navigation. Use the same
 locale for shared date/time formatting throughout item and bookmark views,
 keeping stored timestamps locale-independent. Details:
 [16-internationalization.md](./issues/16-internationalization.md).
+
+## 17 — Responsive layouts across the application
+
+Make the existing website usable on phones, tablets, and desktops. Audit and
+adapt navigation, reading layouts and subfeed columns, toolbars, management
+tables, forms, and overlays so content and actions remain accessible without
+document-level horizontal overflow. Preserve saved layout preferences and
+query state while resizing, and verify with browser checks at representative
+viewport widths. Details:
+[17-responsive-layout.md](./issues/17-responsive-layout.md).

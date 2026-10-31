@@ -5,7 +5,7 @@ description: >-
   Refresh a source, subfeed, or composed feed when entering its item view if
   the time since the previous visit meets a user-defined threshold (default
   one hour), persisting the setting and each target's last visit timestamp.
-status: todo
+status: done
 dependencies: ["05", "06", "07", "11"]
 affects: [app, server, db, tests]
 ---
