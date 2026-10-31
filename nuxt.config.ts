@@ -46,10 +46,12 @@ export default defineNuxtConfig({
     serverBundle: {
       collections: ['ph'],
     },
-    // Bundle the icons used in the app for the browser too. Without this,
-    // every client-side icon relies on a runtime request to the local API.
+    // Include the UI defaults in app.config.ts as well as icons in templates.
+    // Nuxt Icon's default scanner does not include TypeScript files.
     clientBundle: {
-      scan: true,
+      scan: {
+        globInclude: ['**/*.{vue,jsx,tsx,md,mdc,mdx,yml,yaml}', '**/app.config.ts'],
+      },
     },
   },
 
