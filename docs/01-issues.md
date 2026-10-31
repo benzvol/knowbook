@@ -8,28 +8,28 @@ of intent per issue; acceptance criteria and detail live in the issue files.
 Ordering reflects dependencies: foundation first, then domain features, then
 platform concerns.
 
-| #   | Issue                          | Depends on     |
-| --- | ------------------------------ | -------------- |
-| 00  | Project scaffolding & tooling  | —              |
-| 01  | Persistence & data layer       | 00             |
-| 02  | Feed fetch & parse engine      | 01             |
-| 03  | Source management              | 01, 02         |
-| 04  | Categories, types & tagging    | 03             |
-| 04b | Simplify classification        | 04             |
-| 05  | Subfeeds                       | 03, 04b        |
-| 06  | Composed feeds                 | 03, 05         |
-| 07  | Shared content views           | 02, 03         |
-| 07b | Tag include/exclude            | 07             |
-| 08  | Bookmarks                      | 07             |
-| 09  | Managed sources from config    | 03, 05         |
-| 10  | Export & import                | 03, 06, 08     |
-| 11  | Settings & theming             | 00             |
-| 12  | Feed generator (no-RSS sites)  | 02, 03         |
-| 13  | Homepage                       | 07, 08         |
-| 14  | Email digests                  | 05, 06, 11     |
-| 15  | Automatic refresh on entry     | 05, 06, 07, 11 |
-| 16  | English/Hungarian i18n & dates | 07, 08, 11     |
-| 17  | Responsive layouts             | 03, 05–08, 11  |
+| #   | Issue                          | Depends on         |
+| --- | ------------------------------ | ------------------ |
+| 00  | Project scaffolding & tooling  | —                  |
+| 01  | Persistence & data layer       | 00                 |
+| 02  | Feed fetch & parse engine      | 01                 |
+| 03  | Source management              | 01, 02             |
+| 04  | Categories, types & tagging    | 03                 |
+| 04b | Simplify classification        | 04                 |
+| 05  | Subfeeds                       | 03, 04b            |
+| 06  | Composed feeds                 | 03, 05             |
+| 07  | Shared content views           | 02, 03             |
+| 07b | Tag include/exclude            | 07                 |
+| 08  | Bookmarks                      | 07                 |
+| 09  | Managed sources from config    | 03, 05             |
+| 10  | Export & import                | 03, 05, 06, 08, 11 |
+| 11  | Settings & theming             | 00                 |
+| 12  | Feed generator (no-RSS sites)  | 02, 03             |
+| 13  | Homepage                       | 07, 08             |
+| 14  | Email digests                  | 05, 06, 11         |
+| 15  | Automatic refresh on entry     | 05, 06, 07, 11     |
+| 16  | English/Hungarian i18n & dates | 07, 08, 11         |
+| 17  | Responsive layouts             | 03, 05–08, 11      |
 
 ---
 
@@ -135,8 +135,12 @@ user-facing write path.
 
 ## 10 — Export & import
 
-Export sources, feeds, bookmarks and settings to a portable file and import them
-back, with validation and sensible merge/replace behaviour.
+Export all persisted app data from Settings to a versioned JSON file named with
+Knowbook and an ISO timestamp. Import offers initially checked section choices
+(sources, subfeeds, feeds, bookmarks, tags, settings), dependency restrictions,
+and Merge/Replace modes. Before replacing selected sections, automatically
+download a complete backup of the receiving instance. Details:
+[10-export-import.md](./issues/10-export-import.md).
 
 ## 11 — Settings & theming
 

@@ -9,6 +9,7 @@ import type {
   SourceCreateInput,
   SourceUpdateInput,
 } from '#shared/schemas/source'
+import { currentDataCacheEpoch } from '~/utils/dataCacheEpoch'
 
 export const useSourcesStore = defineStore('sources', {
   state: () => ({
@@ -18,10 +19,12 @@ export const useSourcesStore = defineStore('sources', {
   }),
   actions: {
     async fetchAll(): Promise<SourceListItem[]> {
+      const epoch = currentDataCacheEpoch()
       this.loading = true
       this.error = null
       try {
-        this.sources = await $fetch<SourceListItem[]>('/api/sources')
+        const result = await $fetch<SourceListItem[]>('/api/sources')
+        if (epoch === currentDataCacheEpoch()) this.sources = result
       } catch (cause) {
         this.error = errorMessage(cause)
       } finally {

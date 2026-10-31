@@ -9,6 +9,7 @@ import type {
   ItemFacets,
   ItemPage,
 } from '#shared/types'
+import { currentDataCacheEpoch } from '~/utils/dataCacheEpoch'
 
 type BookmarkPage = ItemPage<BookmarkWithItem> & {
   facets: ItemFacets
@@ -41,6 +42,7 @@ export const useBookmarksStore = defineStore('bookmarks', {
     async fetchPage(
       query: BookmarkQueryInput,
     ): Promise<BookmarkPage | undefined> {
+      const epoch = currentDataCacheEpoch()
       this.loading = true
       this.error = null
       this.errorStatus = null
@@ -48,7 +50,7 @@ export const useBookmarksStore = defineStore('bookmarks', {
         const result = await $fetch<BookmarkPage>('/api/bookmarks', {
           query,
         })
-        this.page = result
+        if (epoch === currentDataCacheEpoch()) this.page = result
         return result
       } catch (cause) {
         // Deliberately leaves the previous page untouched — a failed

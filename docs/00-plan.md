@@ -26,7 +26,8 @@ and expanded into individual files under [`issues/`](./issues/).
   of allowed values — so subfeed authoring becomes a guided form (issue 09).
 - **Feed generation** for sites that publish no feed: describe an HTML listing
   page with CSS selectors and read it as an ordinary source (issue 12).
-- **Export / import** of sources, feeds, bookmarks and settings.
+- **Export / import** of all persisted app data from Settings, with selective
+  merge/replace and an automatic receiver-side backup before replacement.
 - **Light** (beige) and **dark** (dark brown) themes.
 
 ## 2. Non-Goals (for now)

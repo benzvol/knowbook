@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import type { Tag } from '#shared/types'
 import type { TagCreateInput, TagUpdateInput } from '#shared/schemas/tag'
+import { currentDataCacheEpoch } from '~/utils/dataCacheEpoch'
 
 export const useTagsStore = defineStore('tags', {
   state: () => ({
@@ -10,10 +11,12 @@ export const useTagsStore = defineStore('tags', {
   }),
   actions: {
     async fetchAll(): Promise<Tag[]> {
+      const epoch = currentDataCacheEpoch()
       this.loading = true
       this.error = null
       try {
-        this.tags = await $fetch<Tag[]>('/api/tags')
+        const result = await $fetch<Tag[]>('/api/tags')
+        if (epoch === currentDataCacheEpoch()) this.tags = result
       } catch (cause) {
         this.error = errorMessage(cause)
       } finally {

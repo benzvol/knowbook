@@ -11,6 +11,7 @@ import type {
   FeedUpdateInput,
 } from '#shared/schemas/feed'
 import { feedMemberLabel } from '#shared/utils/labels'
+import { currentDataCacheEpoch } from '~/utils/dataCacheEpoch'
 
 export const useFeedsStore = defineStore('feeds', {
   state: () => ({
@@ -22,11 +23,13 @@ export const useFeedsStore = defineStore('feeds', {
   }),
   actions: {
     async fetchAll(): Promise<FeedListItem[]> {
+      const epoch = currentDataCacheEpoch()
       this.loading = true
       this.error = null
       this.errorStatus = null
       try {
-        this.feeds = await $fetch<FeedListItem[]>('/api/feeds')
+        const result = await $fetch<FeedListItem[]>('/api/feeds')
+        if (epoch === currentDataCacheEpoch()) this.feeds = result
       } catch (cause) {
         this.error = errorMessage(cause)
         this.errorStatus = errorStatus(cause)
@@ -37,13 +40,14 @@ export const useFeedsStore = defineStore('feeds', {
     },
 
     async fetchOne(id: number): Promise<Feed | undefined> {
+      const epoch = currentDataCacheEpoch()
       this.error = null
       this.errorStatus = null
       try {
         const { members, ...feed } = await $fetch<
           Feed & { members: FeedMemberDetail[] }
         >(`/api/feeds/${id}`)
-        this.membersByFeed[id] = members
+        if (epoch === currentDataCacheEpoch()) this.membersByFeed[id] = members
         return feed
       } catch (cause) {
         this.error = errorMessage(cause)

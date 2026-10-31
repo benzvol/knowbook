@@ -4,6 +4,7 @@ import type {
   SubfeedCreateInput,
   SubfeedUpdateInput,
 } from '#shared/schemas/subfeed'
+import { currentDataCacheEpoch } from '~/utils/dataCacheEpoch'
 
 export const useSubfeedsStore = defineStore('subfeeds', {
   state: () => ({
@@ -26,6 +27,7 @@ export const useSubfeedsStore = defineStore('subfeeds', {
     },
 
     async fetchForSource(sourceId: number): Promise<Subfeed[]> {
+      const epoch = currentDataCacheEpoch()
       this.loading = true
       this.error = null
       this.errorStatus = null
@@ -33,7 +35,7 @@ export const useSubfeedsStore = defineStore('subfeeds', {
         const subfeeds = await $fetch<Subfeed[]>(
           `/api/sources/${sourceId}/subfeeds`,
         )
-        this.bySource[sourceId] = subfeeds
+        if (epoch === currentDataCacheEpoch()) this.bySource[sourceId] = subfeeds
         return subfeeds
       } catch (cause) {
         this.error = errorMessage(cause)

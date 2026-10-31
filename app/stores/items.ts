@@ -4,6 +4,7 @@ import type {
   SearchQueryInput,
 } from '#shared/schemas/itemQuery'
 import type { Item, ItemFacets, ItemPage, RefreshCounts } from '#shared/types'
+import { currentDataCacheEpoch } from '~/utils/dataCacheEpoch'
 
 export type ItemViewKind = 'source' | 'subfeed' | 'feed'
 
@@ -61,6 +62,7 @@ export const useItemsStore = defineStore('items', {
       ref: ItemViewRef,
       query: ItemQueryInput,
     ): Promise<ViewResult | undefined> {
+      const epoch = currentDataCacheEpoch()
       this.loading = true
       this.error = null
       this.errorStatus = null
@@ -68,7 +70,7 @@ export const useItemsStore = defineStore('items', {
         const result = await $fetch<ViewResult>(`${basePath(ref)}/items`, {
           query,
         })
-        this.views[viewKey(ref)] = result
+        if (epoch === currentDataCacheEpoch()) this.views[viewKey(ref)] = result
         return result
       } catch (cause) {
         // Deliberately leaves the previous page in `views` untouched — a
@@ -86,6 +88,7 @@ export const useItemsStore = defineStore('items', {
       ref: ItemViewRef,
       query: SearchQueryInput,
     ): Promise<SearchMeta | undefined> {
+      const epoch = currentDataCacheEpoch()
       this.loading = true
       this.error = null
       this.errorStatus = null
@@ -95,8 +98,10 @@ export const useItemsStore = defineStore('items', {
           { method: 'POST', query },
         )
         const key = viewKey(ref)
-        this.views[key] = result.page
-        this.lastSearch[key] = result.search
+        if (epoch === currentDataCacheEpoch()) {
+          this.views[key] = result.page
+          this.lastSearch[key] = result.search
+        }
         return result.search
       } catch (cause) {
         this.error = errorMessage(cause)
