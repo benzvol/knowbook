@@ -267,3 +267,30 @@ export function parseFeed(body: string): ParsedItem[] {
 
   throw new FeedParseError('Unrecognised feed format: no rss/rdf:RDF/feed root')
 }
+
+/** Return an RFC 5005 style Atom `rel=next` link in Atom or RSS+Atom feeds. */
+export function parseNextLink(body: string, baseUrl: string): string | undefined {
+  let doc: Record<string, unknown>
+  try {
+    doc = xmlParser.parse(body) as Record<string, unknown>
+  } catch {
+    return undefined
+  }
+  let links: Record<string, unknown>[] = []
+  if (doc.feed && typeof doc.feed === 'object') {
+    links = asObjects((doc.feed as Record<string, unknown>).link as XmlNode | XmlNode[])
+  } else if (doc.rss && typeof doc.rss === 'object') {
+    const rss = doc.rss as Record<string, unknown>
+    const channel = (Array.isArray(rss.channel) ? rss.channel[0] : rss.channel) as Record<string, unknown> | undefined
+    links = asObjects((channel?.['atom:link'] ?? channel?.link) as XmlNode | XmlNode[])
+  }
+  const nextHref = links.find((link) => attr(link, 'rel')?.toLowerCase() === 'next')
+  const href = attr(nextHref, 'href')
+  if (!href) return undefined
+  try {
+    const next = new URL(href, baseUrl)
+    return next.protocol === 'http:' || next.protocol === 'https:' ? next.toString() : undefined
+  } catch {
+    return undefined
+  }
+}

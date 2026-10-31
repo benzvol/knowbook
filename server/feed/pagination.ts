@@ -1,7 +1,7 @@
 import type { FeedTarget } from '#shared/types'
 import { DEFAULT_MAX_PAGES } from '#shared/schemas/settings'
 import { fetchFeed, type FetchFeedOptions } from './fetch'
-import { parseFeed, type ParsedItem } from './parse'
+import { parseFeed, parseNextLink, type ParsedItem } from './parse'
 
 export { DEFAULT_MAX_PAGES }
 
@@ -33,16 +33,23 @@ export async function* pages(
   opts: PagesOptions = {},
 ): AsyncGenerator<ParsedItem[]> {
   const isPaginated = !!target.pagination?.pageParam
-  const maxPages = isPaginated ? (opts.maxPages ?? DEFAULT_MAX_PAGES) : 1
+  const maxPages = opts.maxPages ?? DEFAULT_MAX_PAGES
+  let nextUrl: string | undefined
+  const requested = new Set<string>()
 
   for (let page = 0; page < maxPages; page++) {
-    const url = buildPageUrl(target, page)
-    const { body } = await fetchFeed(url, opts)
+    const url = isPaginated ? buildPageUrl(target, page) : (nextUrl ?? buildPageUrl(target, 0))
+    if (requested.has(url)) return
+    requested.add(url)
+    const { body, url: responseUrl } = await fetchFeed(url, opts)
     const items = parseFeed(body)
 
     if (items.length === 0) return
     yield items
 
-    if (!isPaginated) return
+    if (!isPaginated) {
+      nextUrl = parseNextLink(body, responseUrl)
+      if (!nextUrl || requested.has(nextUrl)) return
+    }
   }
 }

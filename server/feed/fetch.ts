@@ -14,6 +14,7 @@ export interface FetchFeedOptions {
 export interface FetchedFeed {
   body: string
   contentType: string | null
+  url: string
 }
 
 export async function fetchFeed(
@@ -50,5 +51,5 @@ export async function fetchFeed(
     throw new FeedEmptyError(`Feed response body was empty: ${url}`)
   }
 
-  return { body, contentType: response.headers.get('content-type') }
+  return { body, contentType: response.headers.get('content-type'), url: response.url || url }
 }
