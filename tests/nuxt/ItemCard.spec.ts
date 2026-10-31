@@ -77,6 +77,33 @@ describe('ItemCard', () => {
     expect(wrapper.text()).toContain('A short lead.')
   })
 
+  it('renders HTML descriptions as escaped, readable lead text', async () => {
+    const wrapper = await mountSuspended(ItemCard, {
+      props: {
+        item: makeItem({
+          description: '<p>First paragraph.</p> <p>The post <a href="https://example.com">linked title</a> appeared.</p>',
+        }),
+        mode: 'list',
+      },
+    })
+    expect(wrapper.find('p.line-clamp-3').text()).toBe('First paragraph. The post linked title appeared.')
+    expect(wrapper.find('p.line-clamp-3 a').exists()).toBe(false)
+  })
+
+  it('decodes entity-escaped HTML tags and accented text in descriptions', async () => {
+    const wrapper = await mountSuspended(ItemCard, {
+      props: {
+        item: makeItem({
+          description: '&#x3C;p>Felvet(het) n&eacute;mi agg&aacute;lyt, mennyire m&eacute;lt&aacute;nyos egy k&ouml;z&eacute;ptelep&uuml;l&eacute;s. &#x3C;em>Mert nem az.&#x3C;/em> &ndash; p&eacute;lda.',
+        }),
+        mode: 'list',
+      },
+    })
+    expect(wrapper.find('p.line-clamp-3').text()).toBe(
+      'Felvet(het) némi aggályt, mennyire méltányos egy középtelepülés. Mert nem az. – példa.',
+    )
+  })
+
   it('shows a placeholder block instead of a shorter card in grid mode when the view reserves media', async () => {
     const wrapper = await mountSuspended(ItemCard, {
       props: {

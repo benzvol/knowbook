@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Item } from '#shared/types'
 import type { ItemViewMode } from '~/composables/useItemView'
+import { htmlToText } from '~/utils/htmlToText'
 
 const props = defineProps<{
   item: Item
@@ -43,6 +44,9 @@ const publishedLabel = computed(() =>
         timeZone: 'UTC',
       })
     : undefined,
+)
+const descriptionLead = computed(() =>
+  props.item.description ? htmlToText(props.item.description) : '',
 )
 </script>
 
@@ -124,10 +128,10 @@ const publishedLabel = computed(() =>
         </div>
 
         <p
-          v-if="item.title && item.description?.trim()"
+          v-if="item.title && descriptionLead"
           class="line-clamp-3 text-sm text-toned"
         >
-          {{ item.description }}
+          {{ descriptionLead }}
         </p>
 
         <p v-if="sourceTitle || publishedLabel" class="text-sm text-muted">
