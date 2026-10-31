@@ -2,15 +2,12 @@ services:
   app:
     build: .
     ports:
-      - '3000:3000'
+      - '127.0.0.1::3100'
     environment:
       NODE_ENV: production
-      NITRO_PORT: '3000'
+      NITRO_PORT: '3100'
       NITRO_HOST: 0.0.0.0
       DATABASE_PATH: /data/knowbook.sqlite
     volumes:
-      - knowbook-data:/data
+      - ./data:/data
     restart: unless-stopped
-
-volumes:
-  knowbook-data:
